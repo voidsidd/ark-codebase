@@ -1,6 +1,6 @@
 # Vanguard – Wildlife Conservation & Anti-Poaching Intelligence Platform
 
-AI-powered ranger operations dashboard combining **camera trap vision**, **acoustic detection**, and **community reporting** for protected areas. Built for Microsoft Hackathon.
+AI-powered ranger operations dashboard combining **camera trap vision**, **acoustic detection**, and **community reporting** for protected areas.
 
 - **Frontend:** React, TypeScript, Tailwind, Vite, Leaflet (CartoDB dark)
 - **Backend:** Node.js, Express
@@ -10,7 +10,7 @@ AI-powered ranger operations dashboard combining **camera trap vision**, **acous
 
 ## Making the demo as realistic as possible (APIs & keys)
 
-The app uses **real APIs** where keys are provided and **deterministic demo data** otherwise, so you can show a credible, production-style demo at the hackathon.
+The app uses **real APIs** where keys aren't really needed mostly and **deterministic demo data** otherwise, so you can show a credible, production-style demo at the hackathon.
 
 ### 1. Live data (no key required)
 
