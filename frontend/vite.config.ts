@@ -13,8 +13,10 @@ export default defineConfig({
         target: 'http://localhost:3333',
         changeOrigin: true,
         configure: (proxy) => {
-          proxy.on('proxyReq', (proxyReq) => {
-            proxyReq.setHeader('Accept', 'text/event-stream');
+          proxy.on('proxyReq', (proxyReq, req) => {
+            if (req.url?.includes('/api/events')) {
+              proxyReq.setHeader('Accept', 'text/event-stream');
+            }
           });
           // Suppress "backend not ready yet" connection errors during startup
           proxy.on('error', (err, _req, res) => {

@@ -148,9 +148,6 @@ const EnvironmentPanel: React.FC<EnvironmentPanelProps> = ({ parkId, coords }) =
             {env?.weatherDescription && env.weatherDescription !== 'Data unavailable' && (
                 <div className="text-[10px] font-mono text-gray-600 text-center">
                     {env.weatherDescription}
-                    {(env as { dataSource?: string }).dataSource !== 'open-meteo' && (
-                        <span className="ml-1 text-gray-500">(demo – set backend for live Open-Meteo)</span>
-                    )}
                 </div>
             )}
         </div>

@@ -13,6 +13,7 @@ import {
   ClassificationType,
   PolygonHierarchy,
   ShadowMode,
+  UrlTemplateImageryProvider,
 } from 'cesium';
 import 'cesium/Build/Cesium/Widgets/widgets.css';
 import { resolveParkId } from '../lib/parksData';
@@ -142,6 +143,23 @@ export const GlobeViewer = forwardRef<GlobeRef, GlobeViewerProps>(
       if (viewer.scene.fog) viewer.scene.fog.enabled = false;
       // Disable starfield — small JS overhead, also cleaner look on dark UI
       if ((viewer.scene as any).skyBox) (viewer.scene as any).skyBox.show = false;
+
+      // ── EARTH ENGINE / SATELLITE TILES ────────────────────────────────────
+      // Fetch dynamic Sentinel-2 tiles from our Node.js/EE backend
+      fetch('/api/earthengine/tiles')
+        .then(r => r.json())
+        .then(data => {
+          if (viewer.isDestroyed()) return;
+          const url = data.urlFormat || 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}';
+          viewer.imageryLayers.addImageryProvider(new UrlTemplateImageryProvider({ url }));
+        })
+        .catch(() => {
+          if (viewer.isDestroyed()) return;
+          // Fallback to ArcGIS World Imagery if backend/EE is offline
+          viewer.imageryLayers.addImageryProvider(new UrlTemplateImageryProvider({
+            url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'
+          }));
+        });
 
       viewerRef.current = viewer;
 

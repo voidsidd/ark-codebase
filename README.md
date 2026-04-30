@@ -9,9 +9,11 @@ Built for the Government of India, the Karnataka Forest Department, and every hi
 We’ve discarded the bloated legacy tech of our competitors for a lean, high-performance architecture that scales until the last poacher puts down their rifle.
 
 - **The Visual Cortex (Frontend):** A high-fidelity React 18 / Vite engine. We use **CesiumJS** for sub-meter resolution 3D global visualization and **Leaflet** for tactical 2D overlays. This isn't just a dashboard; it's a digital twin of the wilderness.
-- **The Central Nervous System (Backend):** A Node.js sanctuary optimized for asynchronous event processing. It handles **SSE (Server-Sent Events)** to maintain persistent sinks for live sensor telemetry.
+- **The Central Nervous System (Backend):** A Node.js sanctuary optimized for asynchronous event processing.
+  - **Dynamic Satellite Intelligence**: Earth Engine Sentinel-2 imagery via Node.js/VCE proxy.
+  - **Threat Matrix Multiplier**: Real-time OpenMeteo & Lunar data integration (30s pulse).
+  - **Vanguard Correlation Engine (VCE)**: Multi-sensor SSE triangulation (Acoustic + Vision + COMINT).
 - **The Tactical Brain (AI/ML):** 
-  - **Vanguard Correlation Engine (VCE):** Triangulates acoustic, visual, and human intelligence. Three sources? One confirmation. Tactical dispatch in under 1500ms.
   - **Vision:** Integrated with **Clarifai** and **HuggingFace** for real-time species classification.
   - **Cognition:** **OpenRouter** and **Gemini** generate actionable ranger recommendations that don't suck.
 - **The Immutable Ledger (Storage):** **Supabase** for robust authentication and high-integrity estate data, with a **MongoDB Atlas** cluster for rapid zone telemetry.

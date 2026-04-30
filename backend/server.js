@@ -1409,8 +1409,8 @@ function scheduleSim(minMs, maxMs, generator) {
     }, delay);
 }
 
-// ── Acoustic simulation (3–8 min) ──────────────────────────────────────────
-scheduleSim(3 * 60 * 1000, 8 * 60 * 1000, () => {
+// ── Acoustic simulation (45s–90s) ──────────────────────────────────────────
+scheduleSim(45 * 1000, 90 * 1000, () => {
     const parkId = simRandom(SIM_PARK_IDS);
     const zone   = simRandom(SIM_ZONES);
     const events = [
@@ -1434,8 +1434,8 @@ scheduleSim(3 * 60 * 1000, 8 * 60 * 1000, () => {
     console.log(`[SIM] Acoustic ${e.subType} (conf ${confidence}) → ${parkId} ${zone}`);
 });
 
-// ── Camera trap simulation (5–12 min) ─────────────────────────────────────
-scheduleSim(5 * 60 * 1000, 12 * 60 * 1000, () => {
+// ── Camera trap simulation (60s–120s) ─────────────────────────────────────
+scheduleSim(60 * 1000, 120 * 1000, () => {
     const parkId = simRandom(SIM_PARK_IDS);
     const zone   = simRandom(SIM_ZONES);
     const events = [
@@ -1459,8 +1459,8 @@ scheduleSim(5 * 60 * 1000, 12 * 60 * 1000, () => {
     console.log(`[SIM] Camera ${e.subType} (conf ${confidence}) → ${parkId} ${zone}`);
 });
 
-// ── Community report simulation (8–15 min) ────────────────────────────────
-scheduleSim(8 * 60 * 1000, 15 * 60 * 1000, () => {
+// ── Community report simulation (90s–180s) ────────────────────────────────
+scheduleSim(90 * 1000, 180 * 1000, () => {
     const parkId = simRandom(SIM_PARK_IDS);
     const zone   = simRandom(SIM_ZONES);
     const events = [
@@ -1483,7 +1483,36 @@ scheduleSim(8 * 60 * 1000, 15 * 60 * 1000, () => {
     console.log(`[SIM] Community ${e.subType} → ${parkId} ${zone}`);
 });
 
-console.log('[SIM] Sensor simulation engine armed — acoustic 3–8 min | camera 5–12 min | community 8–15 min');
+// ── Environment Pulse Simulation (30s) ──────────────────────────────────
+// Keeps the Threat Matrix alive across all dashboards
+scheduleSim(30 * 1000, 30 * 1000, async () => {
+    try {
+        // Broadcast updates for a rotating park to keep the data fresh
+        const parkId = SIM_PARK_IDS[Math.floor(Date.now() / 30000) % SIM_PARK_IDS.length];
+        const coords = PARK_COORDS[parkId];
+        if (!coords) return;
+
+        const resp = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${coords.lat}&longitude=${coords.lon}&current=temperature_2m,wind_speed_10m,precipitation_probability,weather_code&timezone=auto`);
+        const data = await resp.json();
+        const cur = data.current;
+        const lun = getLunarIllumination(coords.lon);
+        const threat = computeThreatMultiplier(lun, cur.wind_speed_10m, cur.precipitation_probability ?? 0);
+
+        broadcastEvent('ENVIRONMENT_UPDATE', {
+            parkId,
+            temperature: cur.temperature_2m,
+            windSpeed: cur.wind_speed_10m,
+            precipitationProbability: cur.precipitation_probability ?? 0,
+            weatherDescription: describeWeatherCode(cur.weather_code),
+            lunarIllumination: lun,
+            threatMultiplier: threat,
+            lastUpdated: new Date().toISOString(),
+            dataSource: 'open-meteo'
+        });
+    } catch (e) {}
+});
+
+console.log('[SIM] Sensor simulation engine armed — FAST MODE (45s-180s intervals)');
 
 // ==========================================
 // 8. CRITICAL HOUSING & ROUTING LOGIC (DO NOT MODIFY)

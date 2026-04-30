@@ -27,8 +27,8 @@ export interface EnvironmentData {
 let sharedPredictiveState: PredictiveState | null = null;
 let predictiveListeners: ((state: PredictiveState | null) => void)[] = [];
 
-let sharedEnvironmentData: EnvironmentData | null = null;
-let environmentListeners: ((data: EnvironmentData | null) => void)[] = [];
+let sharedEnvironmentData: Record<string, EnvironmentData> = {};
+let environmentListeners: ((data: EnvironmentData | null, parkId: string) => void)[] = [];
 
 export function addAlert(alert: AlertEvent) {
     sharedAlerts = [alert, ...sharedAlerts].slice(0, 50);
@@ -146,8 +146,11 @@ export function useLiveAlerts(parkId?: string | null) {
                     }
 
                     if (data.type === 'ENVIRONMENT_UPDATE') {
-                        sharedEnvironmentData = data.payload;
-                        environmentListeners.forEach(l => l(sharedEnvironmentData));
+                        const envParkId = data.payload?.parkId;
+                        if (envParkId) {
+                            sharedEnvironmentData[envParkId] = data.payload;
+                            environmentListeners.forEach(l => l(data.payload, envParkId));
+                        }
                         return;
                     }
 
@@ -176,11 +179,13 @@ export function useLiveAlerts(parkId?: string | null) {
 
         setAlerts([...sharedAlerts]);
         setPredictiveState(sharedPredictiveState);
-        setEnvironmentData(sharedEnvironmentData);
+        setEnvironmentData(sharedEnvironmentData[parkId] || null);
 
         const listener = (newAlerts: AlertEvent[]) => setAlerts([...newAlerts]);
         const predListener = (newState: PredictiveState | null) => setPredictiveState(newState);
-        const envListener = (newData: EnvironmentData | null) => setEnvironmentData(newData);
+        const envListener = (newData: EnvironmentData | null, envParkId: string) => {
+            if (envParkId === parkId) setEnvironmentData(newData);
+        };
 
         listeners.push(listener);
         predictiveListeners.push(predListener);
