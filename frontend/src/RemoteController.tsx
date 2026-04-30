@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import {
     Zap, ShieldAlert, Users, Trash2, Smartphone, MapPin, CheckCircle2,
     Scissors, Truck, Biohazard, Eye, ListX, ChevronDown, ChevronUp,
-    Radio, Camera, Brain, FileText, Download, Loader2, AlertTriangle,
+    Radio, Camera, Brain, Download, Loader2, AlertTriangle,
 } from 'lucide-react';
 import { PARKS, PARK_UUID_MAP } from './lib/parksData';
 import { supabase } from './lib/supabaseClient';

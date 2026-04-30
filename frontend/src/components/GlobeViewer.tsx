@@ -10,7 +10,6 @@ import {
   CameraEventType,
   RequestScheduler,
   createWorldTerrainAsync,
-  GeoJsonDataSource,
   ClassificationType,
   PolygonHierarchy,
   ShadowMode,

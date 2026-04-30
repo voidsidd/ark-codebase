@@ -507,8 +507,4 @@ const AlertDetailModal: React.FC<AlertDetailModalProps> = ({ alert, recentAlerts
   );
 };
 
-const classColors: Record<string, string> = {
-  CRITICAL: '#FF4444', HIGH: '#FF6400', ELEVATED: '#FF9500', MONITOR: '#60A5FA',
-};
-
 export default AlertDetailModal;

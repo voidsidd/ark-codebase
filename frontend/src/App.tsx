@@ -18,7 +18,7 @@ import WildlifeTrackerPanel from './components/WildlifeTrackerPanel';
 import AuthPage from './AuthPage';
 import DashboardPage from './DashboardPage';
 import MarketingPage from './MarketingPage';
-import LoadingScreen from '../LoadingScreen';
+import LoadingScreen from './components/shared/LoadingScreen';
 import EstateIntelPage from './EstateIntelPage';
 import { supabase } from './lib/supabaseClient';
 
