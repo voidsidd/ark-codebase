@@ -67,3 +67,7 @@ coverage/
 
 # ─── Package locks (monorepo — locks live in frontend/ and backend/) ─────────
 /package-lock.json
+
+# ─── Temporary / Large ────────────────────────────────────────────────────────
+_zip_extracted/
+vite.config.ts.timestamp-*
