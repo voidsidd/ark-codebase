@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Camera, Wifi, WifiOff, Link, ExternalLink } from 'lucide-react';
 import Header from './components/Header';
-import { PARKS } from './lib/parksData';
+import { ESTATES } from './lib/estatesData';
 
 interface InatPhoto {
     imageUrl: string;
@@ -26,8 +26,8 @@ const BASE_CAMERAS = [
 const CameraFeedsPage: React.FC = () => {
     const { id } = useParams();
     const navigate = useNavigate();
-    const park = PARKS.find(p => p.id === id);
-    const zones = park ? Object.keys(park.zones) : ['Z1', 'Z2', 'Z3', 'Z4', 'Z5', 'Z6', 'Z7', 'Z8'];
+    const estate = ESTATES.find(p => p.id === id);
+    const zones = estate ? Object.keys(estate.zones) : ['Z1', 'Z2', 'Z3', 'Z4', 'Z5', 'Z6', 'Z7', 'Z8'];
 
     const [inatPhotos, setInatPhotos] = useState<InatPhoto[]>([]);
     const [loadingPhotos, setLoadingPhotos] = useState(false);
@@ -70,10 +70,10 @@ const CameraFeedsPage: React.FC = () => {
     return (
         <div className="h-screen w-screen flex flex-col bg-vanguard-bg text-white overflow-hidden">
             <Header
-                onBack={() => navigate(`/park/${id}`)}
+                onBack={() => navigate(`/estate/${id}`)}
                 backLabel="← BACK"
-                parkId={id}
-                onSpeciesIntel={() => navigate(`/park/${id}/species`)}
+                estateId={id}
+                onSpeciesIntel={() => navigate(`/estate/${id}/species`)}
             />
 
             <div className="flex-1 overflow-y-auto custom-scrollbar">
@@ -92,7 +92,7 @@ const CameraFeedsPage: React.FC = () => {
                         <span className="text-green-400">{onlineCount} ONLINE</span>
                         <span className="text-gray-500">{cameras.length - onlineCount} OFFLINE</span>
                         <span className="text-gray-500">|</span>
-                        <span className="text-gray-400">{park?.name?.toUpperCase()}</span>
+                        <span className="text-gray-400">{estate?.name?.toUpperCase()}</span>
                     </div>
                 </div>
 
@@ -191,7 +191,7 @@ const CameraFeedsPage: React.FC = () => {
                                                 <ExternalLink size={9} /> iNat
                                             </a>
                                         )}
-                                        <button className="flex items-center gap-1.5 px-2.5 py-1.5 text-[9px] font-bold font-mono bg-vanguard-species/10 text-vanguard-species border border-vanguard-species/30 rounded hover:bg-vanguard-species hover:text-white transition-colors">
+                                        <button onClick={() => navigator.clipboard.writeText(window.location.origin + '/api/webhooks/camera/' + cam.id + '?estateId=' + id + '&zone=' + cam.zone)} className="flex items-center gap-1.5 px-2.5 py-1.5 text-[9px] font-bold font-mono bg-vanguard-species/10 text-vanguard-species border border-vanguard-species/30 rounded hover:bg-vanguard-species hover:text-white transition-colors">
                                             <Link size={10} /> CONNECT WEBHOOK
                                         </button>
                                     </div>

@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react';
 import { MapContainer, TileLayer, Polygon, Marker, Popup, useMap } from 'react-leaflet';
 import L from 'leaflet';
-import { PARKS, getParkById } from '../lib/parksData';
+import { ESTATES, getEstateById } from '../lib/estatesData';
 import { useLiveAlerts } from '../lib/liveStream';
 
 // ── Icon factory: uses inline CSS so Tailwind JIT doesn't need to scan these strings ──
@@ -35,7 +35,7 @@ const ICONS = {
 const FALLBACK_ICON = createCustomIcon('#6B7280',
     '<svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/></svg>');
 
-// ── Map updater: re-centers map when park changes without remounting ──────────
+// ── Map updater: re-centers map when estate changes without remounting ──────────
 const MapUpdater = ({ center }: { center: [number, number] }) => {
     const map = useMap();
     useEffect(() => {
@@ -52,11 +52,11 @@ interface EstateBoundaryData {
 }
 
 interface MapPanelProps {
-    parkId?: string | null;
+    estateId?: string | null;
     estateBoundary?: EstateBoundaryData | null;
 }
 
-const MapPanel: React.FC<MapPanelProps> = ({ parkId, estateBoundary }) => {
+const MapPanel: React.FC<MapPanelProps> = ({ estateId, estateBoundary }) => {
     // ── Estate mode: show estate boundary ──────────────────────────────────
     if (estateBoundary) {
         const lat = estateBoundary.centroid_lat ?? 20;
@@ -105,12 +105,12 @@ const MapPanel: React.FC<MapPanelProps> = ({ parkId, estateBoundary }) => {
         );
     }
 
-    // ── Park mode: existing logic ──────────────────────────────────────────
-    const park = getParkById(parkId) || PARKS[0];
-    const { alerts, predictiveState } = useLiveAlerts(park.id);
+    // ── Estate mode: existing logic ──────────────────────────────────────────
+    const estate = getEstateById(estateId) || ESTATES[0];
+    const { alerts, predictiveState } = useLiveAlerts(estate.id);
 
-    const center = park.centerCoordinates;
-    const zones = park.zones;
+    const center = estate.centerCoordinates;
+    const zones = estate.zones;
 
     // Derive zone status dynamically from live alerts — same logic as ZoneStatus.tsx
     const zoneStatusMap: Record<string, string> = {};

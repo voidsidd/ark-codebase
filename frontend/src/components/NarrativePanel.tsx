@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { AlertEvent } from '../lib/parksData';
+import { AlertEvent } from '../lib/estatesData';
 import { generateNarrative, getCachedNarrative } from '../services/narrativeEngine';
 
 interface NarrativePanelProps {

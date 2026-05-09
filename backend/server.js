@@ -1,3 +1,5 @@
+const { exec } = require("child_process");
+const { v4: uuidv4 } = require("uuid");
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
@@ -7,830 +9,91 @@ const mongoose = require('mongoose');
 
 const app = express();
 
-// ==========================================
-// 0. MONGODB CONNECTION
-// ==========================================
-const MONGODB_URI = process.env.MONGODB_URI || 'mongodb+srv://vanguard-admin:itsmesid@vanguard.f6u5i4v.mongodb.net/vanguard';
 
-mongoose.connect(MONGODB_URI)
-    .then(() => console.log('[MongoDB] Connected to Atlas cluster.'))
-    .catch(err => console.error('[MongoDB] Connection error:', err.message));
 
-// Zone Schema
-const zoneSchema = new mongoose.Schema({
-    parkId:    { type: String, required: true, index: true },
-    name:      { type: String, required: true },
-    latitude:  { type: Number, required: true },
-    longitude: { type: Number, required: true },
-    radius:    { type: Number, required: true },
-    status:    { type: String, enum: ['critical', 'warning', 'normal'], default: 'normal' },
-    alerts:    { type: Number, default: 0 },
-    createdAt: { type: Date, default: Date.now },
-});
-const Zone = mongoose.model('Zone', zoneSchema);
 
-// Default zones to seed if DB is empty for a park
-const DEFAULT_ZONES = {
-    nagarhole:   [
-        { name: 'Alpha Core',  latitude: 11.9833 + 0.05, longitude: 76.1167 - 0.05, radius: 5000, status: 'critical', alerts: 2 },
-        { name: 'Beta Sector', latitude: 11.9833 - 0.03, longitude: 76.1167 + 0.02, radius: 6000, status: 'warning',  alerts: 1 },
-        { name: 'Gamma Ring',  latitude: 11.9833 + 0.02, longitude: 76.1167 + 0.06, radius: 5500, status: 'normal',   alerts: 0 },
-        { name: 'Delta Post',  latitude: 11.9833 - 0.04, longitude: 76.1167 - 0.03, radius: 7000, status: 'critical', alerts: 3 },
-    ],
-    corbett:     [{ name: 'Core Zone', latitude: 29.53, longitude: 78.7747, radius: 8000, status: 'normal', alerts: 0 }],
-    kaziranga:   [{ name: 'Rhino Reserve', latitude: 26.5775, longitude: 93.1711, radius: 7000, status: 'warning', alerts: 1 }],
-    sundarbans:  [{ name: 'Tiger Delta', latitude: 21.9497, longitude: 88.9468, radius: 9000, status: 'critical', alerts: 2 }],
-    'maasai-mara': [{ name: 'Migration Corridor', latitude: -1.4061, longitude: 35.1019, radius: 10000, status: 'normal', alerts: 0 }],
-    kruger:      [{ name: 'Big Five Zone', latitude: -23.9884, longitude: 31.5547, radius: 12000, status: 'warning', alerts: 1 }],
-};
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 // ==========================================
-// 1. BASE CONFIGURATION & ASSETS
+// Camera Webhook Ingestion & AI Pipeline
 // ==========================================
 
-// Earth Engine Authentication & Initialization
-let eeReady = false;
-let eeTileUrl = '';
+app.post("/api/webhooks/camera/:cameraId", express.raw({ type: "image/*", limit: "10mb" }), async (req, res) => {
+    const { cameraId } = req.params;
+    const { estateId, zone } = req.query;
+    const tempPath = path.join(__dirname, "temp_" + cameraId + "_" + Date.now() + ".jpg");
 
-try {
-    // Support both: env var (Render/production) and local file (dev)
-    let eeKey;
-    if (process.env.GEE_SERVICE_ACCOUNT_KEY) {
-        eeKey = JSON.parse(process.env.GEE_SERVICE_ACCOUNT_KEY);
-        console.log('[EarthEngine] Using credentials from environment variable.');
-    } else {
-        eeKey = require('../earth-engine-491414-a2f63906e133.json');
-        console.log('[EarthEngine] Using credentials from local JSON file.');
-    }
-    console.log('[EarthEngine] Authenticating with private key...');
-    ee.data.authenticateViaPrivateKey(eeKey, () => {
-        ee.initialize(null, null, () => {
-            eeReady = true;
-            console.log('[EarthEngine] Authenticated successfully.');
-            
-            // Create a dynamic high-res global satellite map tile service
-            // Using Sentinel-2 harmonized SR + dynamic scaling
-            const image = ee.ImageCollection('COPERNICUS/S2_SR_HARMONIZED')
-                .filterDate('2023-01-01', '2023-12-31')
-                .median()
-                .visualize({bands: ['B4', 'B3', 'B2'], min: 0, max: 3000});
-            
-            image.getMap({}, ({urlFormat}) => {
-                eeTileUrl = urlFormat;
-                console.log(`[EarthEngine] Tile layer generated: ${urlFormat}`);
-            });
-        }, (err) => {
-            console.error('[EarthEngine] Initialization error:', err);
-        });
-    }, (err) => {
-        console.error('[EarthEngine] Auth error:', err);
-    });
-} catch (err) {
-    console.warn('[EarthEngine] Warning: Key file not found or invalid.', err.message);
-}
+    fs.writeFileSync(tempPath, req.body);
 
-// Endpoint to fetch the EE satellite tile URL format for 3D Earth
-app.get('/api/earthengine/tiles', (req, res) => {
-    if (!eeReady || !eeTileUrl) {
-        return res.status(503).json({ error: 'Earth Engine not initialized yet', fallback: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}' });
-    }
-    res.json({ urlFormat: eeTileUrl });
-});
+    const pythonCode = "import sys; import cv2; import asyncio; import json; from ai_engine.hendricks_engine import HendricksEngine, DetectionMeta; from datetime import datetime; f=cv2.imread('" + tempPath + "', cv2.IMREAD_COLOR); meta=DetectionMeta(camera_id='" + cameraId + "', camera_zone='" + (zone || "UNKNOWN") + "', timestamp=datetime.now()); res=asyncio.run(HendricksEngine().process_frame(f, meta)) if f is not None else None; print(json.dumps(res))";
+    const cmd = "python3 -c '" + pythonCode + "'";
 
-// Endpoint to fetch high-res bounding box for a Vanguard park
-app.get('/api/earthengine/park-bounds/:parkId', (req, res) => {
-    const { parkId } = req.params;
-    const PARK_COORDS = {
-        'nagarhole':   { lat: 11.9833, lon: 76.1167, radius: 0.1 },
-        'corbett':     { lat: 29.5300, lon: 78.7747, radius: 0.15 },
-        'kaziranga':   { lat: 26.5775, lon: 93.1711, radius: 0.1 },
-        'sundarbans':  { lat: 21.9497, lon: 88.9468, radius: 0.2 },
-        'maasai-mara': { lat: -1.4061, lon: 35.1019, radius: 0.2 },
-        'kruger':      { lat: -23.9884, lon: 31.5547, radius: 0.3 },
-    };
-    const c = PARK_COORDS[parkId];
-    if (!c) return res.status(404).json({ error: 'Unknown park' });
-    
-    // Return GeoJSON polygon representing the exact border overlay for the globe
-    const border = {
-        type: 'FeatureCollection',
-        features: [{
-            type: 'Feature',
-            geometry: {
-                type: 'Polygon',
-                coordinates: [[
-                    [c.lon - c.radius, c.lat - c.radius],
-                    [c.lon + c.radius, c.lat - c.radius],
-                    [c.lon + c.radius, c.lat + c.radius],
-                    [c.lon - c.radius, c.lat + c.radius],
-                    [c.lon - c.radius, c.lat - c.radius]
-                ]]
-            },
-            properties: { name: parkId, color: '#00ccff' }
-        }]
-    };
-    res.json(border);
-});
+    const { exec } = require("child_process");
 
-// ==========================================
-// ZONES API — MongoDB backed
-// ==========================================
-
-// GET /api/zones/:parkId — fetch all zones; auto-seed if empty
-app.get('/api/zones/:parkId', async (req, res) => {
-    try {
-        const { parkId } = req.params;
-        let zones = await Zone.find({ parkId });
-        if (zones.length === 0 && DEFAULT_ZONES[parkId]) {
-            const seeds = DEFAULT_ZONES[parkId].map(z => ({ ...z, parkId }));
-            zones = await Zone.insertMany(seeds);
-            console.log(`[MongoDB] Seeded ${zones.length} zones for ${parkId}`);
+    exec(cmd, { cwd: __dirname, env: { ...process.env, PYTHONPATH: __dirname } }, (error, stdout, stderr) => {
+        if (fs.existsSync(tempPath)) fs.unlinkSync(tempPath);
+        if (error) {
+            console.error("[AI Engine] Error: " + error.message);
+            return res.status(500).json({ error: "AI Processing Failed" });
         }
-        res.json(zones);
-    } catch (err) {
-        res.status(500).json({ error: err.message });
-    }
-});
-
-// POST /api/zones — create a new zone
-app.post('/api/zones', async (req, res) => {
-    try {
-        const zone = new Zone(req.body);
-        await zone.save();
-        res.status(201).json(zone);
-    } catch (err) {
-        res.status(400).json({ error: err.message });
-    }
-});
-
-// PATCH /api/zones/:id — update zone status/alerts
-app.patch('/api/zones/:id', async (req, res) => {
-    try {
-        const zone = await Zone.findByIdAndUpdate(req.params.id, req.body, { new: true });
-        if (!zone) return res.status(404).json({ error: 'Zone not found' });
-        res.json(zone);
-    } catch (err) {
-        res.status(400).json({ error: err.message });
-    }
-});
-
-// DELETE /api/zones/:id — remove a zone
-app.delete('/api/zones/:id', async (req, res) => {
-    try {
-        await Zone.findByIdAndDelete(req.params.id);
-        res.json({ success: true });
-    } catch (err) {
-        res.status(400).json({ error: err.message });
-    }
-});
-
-// Serve the production-built React frontend files
-app.use(express.static(path.join(__dirname, '../frontend/dist')));
-app.use(cors({ origin: '*' }));
-app.use(express.json({ limit: '50mb' })); // Allow high-res camera frames
-
-// In-memory store of connected SSE clients
-let clients = [];
-
-// ==========================================
-// 2. LIVE DATA TRANSMISSION (SSE) 
-// ==========================================
-// This sits at the top to ensure critical alerts are prioritized
-app.get('/api/events', (req, res) => {
-    res.setHeader('Content-Type', 'text/event-stream');
-    res.setHeader('Cache-Control', 'no-cache');
-    res.setHeader('Connection', 'keep-alive');
-    res.setHeader('Access-Control-Allow-Origin', '*');
-
-    clients.push(res);
-    console.log(`[SSE] New hardware connection established. Total active sinks: ${clients.length}`);
-
-    req.on('close', () => {
-        clients = clients.filter(client => client !== res);
-        console.log(`[SSE] Client offline. Remaining pool: ${clients.length}`);
+        try {
+            const result = JSON.parse(stdout);
+            if (result && result.assessment) {
+                const { assessment } = result;
+                processEvent({
+                    id: "AI-CAM-" + Date.now(),
+                    type: "CAMERA",
+                    subType: assessment.flags[0] || "AI_DETECTION",
+                    zone: zone || "UNKNOWN",
+                    estateId: estateId,
+                    confidence: assessment.score / 100,
+                    description: (assessment.verification && assessment.verification.reasoning) || "AI verified threat signature detected.",
+                    timestamp: new Date().toLocaleTimeString(),
+                    priority: assessment.level,
+                    location: [0, 0]
+                });
+            }
+            res.status(200).json({ success: true, processed: !!result });
+        } catch (e) {
+            console.error("[AI Engine] Parsing Error: " + e.message + " | Output: " + stdout);
+            res.status(500).json({ error: "Result Parsing Failed" });
+        }
     });
 });
-
-function broadcastEvent(eventType, payload) {
-    const data = JSON.stringify({ type: eventType, payload });
-    clients.forEach(client => {
-        client.write(`data: ${data}\n\n`);
-    });
-}
-
-// In-memory store of recent alerts for correlation logic
-let recentAlerts = [];
-
-// Simple disk-backed store for fauna catalog and camera spottings
-const DATA_DIR = path.join(__dirname, 'data');
-const FAUNA_FILE = path.join(DATA_DIR, 'fauna.json');
-const SPOTTINGS_FILE = path.join(DATA_DIR, 'spottings.json');
-const AUDIO_FILE = path.join(DATA_DIR, 'audio.json');
-
-function ensureDataDir() {
-    if (!fs.existsSync(DATA_DIR)) {
-        fs.mkdirSync(DATA_DIR, { recursive: true });
-    }
-}
-
-function readJsonSafe(filePath, fallback) {
-    try {
-        if (!fs.existsSync(filePath)) return fallback;
-        const raw = fs.readFileSync(filePath, 'utf8');
-        return raw ? JSON.parse(raw) : fallback;
-    } catch {
-        return fallback;
-    }
-}
-
-function writeJsonSafe(filePath, value) {
-    ensureDataDir();
-    fs.writeFileSync(filePath, JSON.stringify(value, null, 2), 'utf8');
-}
-
-// Seed fauna catalog with rough, publicly available estimates (approximate, for demo only)
-function seedFaunaIfEmpty() {
-    const existing = readJsonSafe(FAUNA_FILE, null);
-    if (existing) return existing;
-    const seeded = {
-        nagarhole: [
-            {
-                id: 'ngh-tiger',
-                parkId: 'nagarhole',
-                commonName: 'Bengal Tiger',
-                scientificName: 'Panthera tigris tigris',
-                estimatedCount: 150,
-                status: 'EN',
-                notes: 'High-density tiger landscape; estimate from Karnataka tiger census (NTCA/State Forest Dept).',
-                citation: 'NTCA All India Tiger Estimation 2022; IUCN Red List 2024'
-            },
-            {
-                id: 'ngh-elephant',
-                parkId: 'nagarhole',
-                commonName: 'Asian Elephant',
-                scientificName: 'Elephas maximus indicus',
-                estimatedCount: 800,
-                status: 'EN',
-                notes: 'Part of Nilgiri elephant landscape; pooled estimate (Project Elephant, MoEFCC).',
-                citation: 'IUCN Red List 2024; Elephant Census India'
-            },
-            {
-                id: 'ngh-leopard',
-                parkId: 'nagarhole',
-                commonName: 'Indian Leopard',
-                scientificName: 'Panthera pardus fusca',
-                estimatedCount: 120,
-                status: 'VU',
-                notes: 'Leopard density from camera trap studies overlapping tiger grids.',
-                citation: 'IUCN Red List 2024'
-            }
-        ],
-        corbett: [
-            {
-                id: 'cor-tiger',
-                parkId: 'corbett',
-                commonName: 'Bengal Tiger',
-                scientificName: 'Panthera tigris tigris',
-                estimatedCount: 250,
-                status: 'EN',
-                notes: 'Corbett holds one of India’s highest tiger populations (NTCA).',
-                citation: 'NTCA 2022; IUCN 2024'
-            },
-            {
-                id: 'cor-elephant',
-                parkId: 'corbett',
-                commonName: 'Asian Elephant',
-                scientificName: 'Elephas maximus indicus',
-                estimatedCount: 1000,
-                status: 'EN',
-                notes: 'Trans-Himalayan elephant population across Corbett–Rajaji corridor.',
-                citation: 'Project Elephant; IUCN 2024'
-            },
-            {
-                id: 'cor-gharial',
-                parkId: 'corbett',
-                commonName: 'Gharial',
-                scientificName: 'Gavialis gangeticus',
-                estimatedCount: 40,
-                status: 'CR',
-                notes: 'Critically endangered riverine crocodilian; reintroduced population.',
-                citation: 'IUCN Red List 2024'
-            }
-        ],
-        kaziranga: [
-            {
-                id: 'kaz-rhino',
-                parkId: 'kaziranga',
-                commonName: 'Indian One-horned Rhinoceros',
-                scientificName: 'Rhinoceros unicornis',
-                estimatedCount: 2600,
-                status: 'VU',
-                notes: 'World’s largest population; 2018 census ~2,613 (Assam Forest Dept).',
-                citation: 'Kaziranga Census 2018; IUCN 2024'
-            },
-            {
-                id: 'kaz-elephant',
-                parkId: 'kaziranga',
-                commonName: 'Asian Elephant',
-                scientificName: 'Elephas maximus indicus',
-                estimatedCount: 1200,
-                status: 'EN',
-                notes: 'Large breeding population across Kaziranga–Karbi Anglong complex.',
-                citation: 'IUCN 2024'
-            },
-            {
-                id: 'kaz-tiger',
-                parkId: 'kaziranga',
-                commonName: 'Bengal Tiger',
-                scientificName: 'Panthera tigris tigris',
-                estimatedCount: 120,
-                status: 'EN',
-                notes: 'High tiger density (NTCA).',
-                citation: 'NTCA 2022; IUCN 2024'
-            }
-        ],
-        sundarbans: [
-            {
-                id: 'sun-tiger',
-                parkId: 'sundarbans',
-                commonName: 'Sundarbans Bengal Tiger',
-                scientificName: 'Panthera tigris tigris',
-                estimatedCount: 100,
-                status: 'EN',
-                notes: 'Mangrove-adapted tiger population (Indian Sundarbans).',
-                citation: 'NTCA/WII; IUCN 2024'
-            },
-            {
-                id: 'sun-dolphin',
-                parkId: 'sundarbans',
-                commonName: 'Irrawaddy Dolphin',
-                scientificName: 'Orcaella brevirostris',
-                estimatedCount: 80,
-                status: 'EN',
-                notes: 'Estuarine population; estimates from survey reports.',
-                citation: 'IUCN 2024'
-            },
-            {
-                id: 'sun-crocodile',
-                parkId: 'sundarbans',
-                commonName: 'Estuarine Crocodile',
-                scientificName: 'Crocodylus porosus',
-                estimatedCount: 250,
-                status: 'LC',
-                notes: 'Apex predator; indicative estimate.',
-                citation: 'IUCN 2024'
-            }
-        ],
-        'maasai-mara': [
-            {
-                id: 'mara-lion',
-                parkId: 'maasai-mara',
-                commonName: 'African Lion',
-                scientificName: 'Panthera leo melanochaita',
-                estimatedCount: 850,
-                status: 'VU',
-                notes: 'Mara–Serengeti ecosystem; cross-border population.',
-                citation: 'KWS/Mara Conservancy; IUCN 2024'
-            },
-            {
-                id: 'mara-elephant',
-                parkId: 'maasai-mara',
-                commonName: 'African Savanna Elephant',
-                scientificName: 'Loxodonta africana',
-                estimatedCount: 2500,
-                status: 'EN',
-                notes: 'Mobile cross-border population (Kenya–Tanzania).',
-                citation: 'IUCN 2024'
-            },
-            {
-                id: 'mara-rhino',
-                parkId: 'maasai-mara',
-                commonName: 'Black Rhinoceros',
-                scientificName: 'Diceros bicornis michaeli',
-                estimatedCount: 40,
-                status: 'CR',
-                notes: 'Small remnant population under protection.',
-                citation: 'IUCN Red List 2024'
-            }
-        ],
-        kruger: [
-            {
-                id: 'kru-elephant',
-                parkId: 'kruger',
-                commonName: 'African Savanna Elephant',
-                scientificName: 'Loxodonta africana',
-                estimatedCount: 19500,
-                status: 'EN',
-                notes: 'SANParks census (~19–20k).',
-                citation: 'SANParks; IUCN 2024'
-            },
-            {
-                id: 'kru-white-rhino',
-                parkId: 'kruger',
-                commonName: 'Southern White Rhinoceros',
-                scientificName: 'Ceratotherium simum simum',
-                estimatedCount: 2500,
-                status: 'NT',
-                notes: 'Population under pressure; SANParks estimates.',
-                citation: 'SANParks; IUCN 2024'
-            },
-            {
-                id: 'kru-wild-dog',
-                parkId: 'kruger',
-                commonName: 'African Wild Dog',
-                scientificName: 'Lycaon pictus',
-                estimatedCount: 150,
-                status: 'EN',
-                notes: 'Meta-population within Greater Kruger.',
-                citation: 'IUCN 2024'
-            }
-        ]
-    };
-    writeJsonSafe(FAUNA_FILE, seeded);
-    return seeded;
-}
-
-function seedSpottingsIfEmpty() {
-    const existing = readJsonSafe(SPOTTINGS_FILE, null);
-    if (existing) return existing;
-    const now = new Date();
-    const iso = (offsetMinutes) => new Date(now.getTime() - offsetMinutes * 60000).toISOString();
-    const seeded = {
-        nagarhole: [
-            {
-                id: 'ngh-spot-1',
-                parkId: 'nagarhole',
-                speciesCommonName: 'Asian Elephant',
-                scientificName: 'Elephas maximus indicus',
-                zone: 'Z2',
-                timestamp: iso(35),
-                imageUrl: 'https://images.unsplash.com/photo-1546182990-dffeafbe841d?q=80&w=800&auto=format&fit=crop',
-                visionMode: 'DAY'
-            },
-            {
-                id: 'ngh-spot-2',
-                parkId: 'nagarhole',
-                speciesCommonName: 'Bengal Tiger',
-                scientificName: 'Panthera tigris tigris',
-                zone: 'Z4',
-                timestamp: iso(120),
-                imageUrl: 'https://images.unsplash.com/photo-1510936111840-65e151ad71bb?q=80&w=800&auto=format&fit=crop',
-                visionMode: 'NIGHT'
-            }
-        ],
-        corbett: [
-            {
-                id: 'cor-spot-1',
-                parkId: 'corbett',
-                speciesCommonName: 'Bengal Tiger',
-                scientificName: 'Panthera tigris tigris',
-                zone: 'Z3',
-                timestamp: iso(90),
-                imageUrl: 'https://images.unsplash.com/photo-1516280440614-37939bbacd81?q=80&w=800&auto=format&fit=crop',
-                visionMode: 'NIGHT'
-            }
-        ],
-        kaziranga: [
-            {
-                id: 'kaz-spot-1',
-                parkId: 'kaziranga',
-                speciesCommonName: 'Indian One-horned Rhinoceros',
-                scientificName: 'Rhinoceros unicornis',
-                zone: 'Z1',
-                timestamp: iso(45),
-                imageUrl: 'https://images.unsplash.com/photo-1524135329990-07660cd5bf10?q=80&w=800&auto=format&fit=crop',
-                visionMode: 'DAY'
-            }
-        ],
-        sundarbans: [
-            {
-                id: 'sun-spot-1',
-                parkId: 'sundarbans',
-                speciesCommonName: 'Sundarbans Bengal Tiger',
-                scientificName: 'Panthera tigris tigris',
-                zone: 'Z5',
-                timestamp: iso(15),
-                imageUrl: 'https://images.unsplash.com/photo-1546182990-dffeafbe841d?q=80&w=800&auto=format&fit=crop',
-                visionMode: 'NIGHT'
-            }
-        ],
-        'maasai-mara': [
-            {
-                id: 'mara-spot-1',
-                parkId: 'maasai-mara',
-                speciesCommonName: 'African Lion',
-                scientificName: 'Panthera leo melanochaita',
-                zone: 'Z6',
-                timestamp: iso(60),
-                imageUrl: 'https://images.unsplash.com/photo-1546182990-dffeafbe841d?q=80&w=800&auto=format&fit=crop',
-                visionMode: 'DAY'
-            }
-        ],
-        kruger: [
-            {
-                id: 'kru-spot-1',
-                parkId: 'kruger',
-                speciesCommonName: 'African Wild Dog',
-                scientificName: 'Lycaon pictus',
-                zone: 'Z7',
-                timestamp: iso(25),
-                imageUrl: 'https://images.unsplash.com/photo-1601758493928-1993e6ec87cd?q=80&w=800&auto=format&fit=crop',
-                visionMode: 'DAY'
-            }
-        ]
-    };
-    writeJsonSafe(SPOTTINGS_FILE, seeded);
-    return seeded;
-}
-
-let faunaStore = seedFaunaIfEmpty();
-let spottingsStore = seedSpottingsIfEmpty();
-let audioStore = readJsonSafe(AUDIO_FILE, null);
-if (!audioStore) {
-    const now = new Date();
-    const isoTime = (offsetMinutes) =>
-        new Date(now.getTime() - offsetMinutes * 60000).toISOString().substring(11, 19);
-    audioStore = {
-        nagarhole: [
-            {
-                id: 'ngh-a1',
-                parkId: 'nagarhole',
-                zone: 'Z4',
-                timestamp: isoTime(25),
-                classification: 'Single Gunshot Pulse',
-                threatLevel: 'THREAT',
-                confidence: 0.94,
-                sourceType: 'ACOUSTIC_SENSOR'
-            },
-            {
-                id: 'ngh-a2',
-                parkId: 'nagarhole',
-                zone: 'Z2',
-                timestamp: isoTime(80),
-                classification: 'Elephant Trumpet Call',
-                threatLevel: 'WILDLIFE',
-                confidence: 0.88,
-                sourceType: 'ACOUSTIC_SENSOR'
-            }
-        ],
-        corbett: [
-            {
-                id: 'cor-a1',
-                parkId: 'corbett',
-                zone: 'Z3',
-                timestamp: isoTime(60),
-                classification: 'Chainsaw-Like Harmonic Pattern',
-                threatLevel: 'THREAT',
-                confidence: 0.92,
-                sourceType: 'ACOUSTIC_SENSOR'
-            }
-        ],
-        kaziranga: [
-            {
-                id: 'kaz-a1',
-                parkId: 'kaziranga',
-                zone: 'Z1',
-                timestamp: isoTime(45),
-                classification: 'Ambient Wetland Chorus',
-                threatLevel: 'AMBIENT',
-                confidence: 0.78,
-                sourceType: 'ACOUSTIC_SENSOR'
-            }
-        ],
-        sundarbans: [
-            {
-                id: 'sun-a1',
-                parkId: 'sundarbans',
-                zone: 'Z5',
-                timestamp: isoTime(15),
-                classification: 'Boat Engine / Low RPM',
-                threatLevel: 'THREAT',
-                confidence: 0.86,
-                sourceType: 'ACOUSTIC_SENSOR'
-            }
-        ],
-        'maasai-mara': [
-            {
-                id: 'mara-a1',
-                parkId: 'maasai-mara',
-                zone: 'Z6',
-                timestamp: isoTime(50),
-                classification: 'Lion Roar Sequence',
-                threatLevel: 'WILDLIFE',
-                confidence: 0.9,
-                sourceType: 'ACOUSTIC_SENSOR'
-            }
-        ],
-        kruger: [
-            {
-                id: 'kru-a1',
-                parkId: 'kruger',
-                zone: 'Z7',
-                timestamp: isoTime(35),
-                classification: 'Vehicle Convoy on Gravel',
-                threatLevel: 'THREAT',
-                confidence: 0.89,
-                sourceType: 'ACOUSTIC_SENSOR'
-            }
-        ]
-    };
-    writeJsonSafe(AUDIO_FILE, audioStore);
-}
-// ==========================================
-// 3. VANGUARD CORRELATION ENGINE (VCE) v2
-// ==========================================
-//
-// Rules (evaluated in priority order):
-//   Rule A — Triple Correlation: 3+ events in zone within 30 min, 2+ source types → CRITICAL correlated incident
-//   Rule B — High-Confidence Acoustic: GUNSHOT/CHAINSAW > 0.92 confidence → HIGH priority
-//   Rule C — Zone Correlation: 2+ events in zone within 30 min, ≥1 human-presence signal → ELEVATED incident
-
-function processEvent(newEvent) {
-    newEvent.timestampMs = Date.now();
-    recentAlerts.push(newEvent);
-
-    // 30-minute rolling window — wide enough for multi-source correlation
-    const thirtyMinsAgo = Date.now() - 30 * 60 * 1000;
-    recentAlerts = recentAlerts.filter(a => a.timestampMs > thirtyMinsAgo);
-
-    // Gather all events in this zone for this park within the window
-    const zoneAlerts = recentAlerts.filter(a =>
-        a.parkId === newEvent.parkId &&
-        a.zone === newEvent.zone
-    );
-
-    // Distinct source types present in this zone window (ACOUSTIC, CAMERA, COMMUNITY)
-    const uniqueSourceTypes = new Set(zoneAlerts.map(a => a.type));
-
-    // A human-presence signal means any CAMERA HUMAN_PRESENCE or any COMMUNITY report
-    const hasHumanPresence = zoneAlerts.some(a =>
-        a.subType === 'HUMAN_PRESENCE' || a.type === 'COMMUNITY'
-    );
-
-    // ── Rule A: Triple Correlation (highest priority — fires immediately) ──
-    if (zoneAlerts.length >= 3 && uniqueSourceTypes.size >= 2) {
-        console.log(`[VCE] CRITICAL: Triple correlation in ${newEvent.parkId} ${newEvent.zone}. Sources: ${[...uniqueSourceTypes].join(', ')}.`);
-        const correlatedEvent = {
-            id: `COR-${Date.now()}`,
-            type: 'CORRELATED',
-            subType: 'CONFIRMED_THREAT_EXTREME',
-            zone: newEvent.zone,
-            timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
-            timestampMs: Date.now(),
-            description: `TRIPLE CORRELATION: Computer Vision, Acoustic arrays, and Human Intelligence have triangulated to ${newEvent.zone}. Dispatching tactical units immediately.`,
-            priority: 'CRITICAL',
-            location: newEvent.location,
-            parkId: newEvent.parkId
-        };
-        // Broadcast the triggering event first, then the correlated incident
-        broadcastEvent('NEW_ALERT', newEvent);
-        setTimeout(() => broadcastEvent('NEW_ALERT', correlatedEvent), 1500);
-        return;
-    }
-
-    // ── Rule B: High-confidence acoustic (GUNSHOT or CHAINSAW) ──
-    if (
-        newEvent.type === 'ACOUSTIC' &&
-        (newEvent.subType === 'GUNSHOT' || newEvent.subType === 'CHAINSAW') &&
-        newEvent.confidence > 0.92
-    ) {
-        newEvent.priority = 'HIGH';
-        console.log(`[VCE] HIGH: Confirmed ${newEvent.subType} at confidence ${newEvent.confidence} in ${newEvent.parkId} ${newEvent.zone}.`);
-    }
-
-    // ── Rule C: Zone correlation with human-presence signal ──
-    if (
-        zoneAlerts.length >= 2 &&
-        hasHumanPresence &&
-        newEvent.priority !== 'CRITICAL' &&
-        newEvent.priority !== 'HIGH'
-    ) {
-        newEvent.priority = 'ELEVATED';
-        newEvent.description = `[ZONE CORRELATION] Human-activity signal detected in sector. ` + newEvent.description;
-        console.log(`[VCE] ELEVATED: Zone correlation + human presence in ${newEvent.parkId} ${newEvent.zone}.`);
-    }
-
-    broadcastEvent('NEW_ALERT', newEvent);
-}
-
-// ==========================================
-// 4. WEBHOOK INGESTION (EDGE IOT)
-// ==========================================
-
-app.post('/api/webhooks/vision', (req, res) => {
-    const { parkId, zone, type, subType, confidence, description, location } = req.body;
-    console.log(`[Vision Ingest] Processing ${subType} in ${parkId} sector ${zone}`);
-    processEvent({
-        id: `CAM-${Date.now()}`,
-        type: type || 'CAMERA',
-        subType, zone, confidence, description, location, parkId,
-        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
-        priority: confidence > 0.8 ? 'HIGH' : 'ELEVATED'
-    });
-    res.status(200).json({ success: true, message: 'Ingest successful' });
-});
-
-app.post('/api/webhooks/acoustic', (req, res) => {
-    const { parkId, zone, type, subType, confidence, description, location } = req.body;
-    console.log(`[Acoustic Ingest] Processing ${subType} in ${parkId} sector ${zone}`);
-    processEvent({
-        id: `ACO-${Date.now()}`,
-        type: type || 'ACOUSTIC',
-        subType, zone, confidence, description, location, parkId,
-        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
-        priority: 'HIGH'
-    });
-    res.status(200).json({ success: true });
-});
-
-app.post('/api/webhooks/community', (req, res) => {
-    const { parkId, zone, type, subType, description, location } = req.body;
-    console.log(`[Community Ingest] Processing ${subType} in ${parkId} sector ${zone}`);
-    processEvent({
-        id: `COM-${Date.now()}`,
-        type: type || 'COMMUNITY',
-        subType, zone, description, location, parkId,
-        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
-        priority: 'ELEVATED'
-    });
-    res.status(200).json({ success: true });
-});
-
-app.post('/api/webhooks/clear', (req, res) => {
-    console.log(`[Admin Command] Force clearing hardware state and correlation memory.`);
-    recentAlerts = [];
-    broadcastEvent('CLEAR_FEED', {});
-    res.status(200).json({ success: true });
-});
-
-// ==========================================
-// 5. FAUNA CATALOG & 24H SPOTTINGS (PERSISTENT)
-// ==========================================
-
-app.get('/api/fauna/:parkId', (req, res) => {
-    const { parkId } = req.params;
+app.delete('/api/fauna/:estateId/:id', (req, res) => {
+    const { estateId, id } = req.params;
     faunaStore = readJsonSafe(FAUNA_FILE, faunaStore || {});
-    const list = faunaStore[parkId] || [];
-    res.json(list);
-});
-
-app.post('/api/fauna/:parkId', (req, res) => {
-    const { parkId } = req.params;
-    const { commonName, scientificName, estimatedCount, status, notes, citation } = req.body || {};
-    faunaStore = readJsonSafe(FAUNA_FILE, faunaStore || {});
-    const entry = {
-        id: `${parkId}-${Date.now()}`,
-        parkId,
-        commonName,
-        scientificName,
-        estimatedCount: Number(estimatedCount) || 0,
-        status: status || '',
-        notes: notes || '',
-        citation: citation || ''
-    };
-    faunaStore[parkId] = [...(faunaStore[parkId] || []), entry];
-    writeJsonSafe(FAUNA_FILE, faunaStore);
-    res.status(201).json(entry);
-});
-
-app.put('/api/fauna/:parkId/:id', (req, res) => {
-    const { parkId, id } = req.params;
-    const { commonName, scientificName, estimatedCount, status, notes, citation } = req.body || {};
-    faunaStore = readJsonSafe(FAUNA_FILE, faunaStore || {});
-    const list = faunaStore[parkId] || [];
-    const idx = list.findIndex(e => e.id === id);
-    if (idx === -1) {
-        return res.status(404).json({ error: 'Not found' });
-    }
-    const updated = {
-        ...list[idx],
-        commonName: commonName ?? list[idx].commonName,
-        scientificName: scientificName ?? list[idx].scientificName,
-        estimatedCount: estimatedCount != null ? Number(estimatedCount) || 0 : list[idx].estimatedCount,
-        status: status ?? list[idx].status,
-        notes: notes ?? list[idx].notes,
-        citation: citation !== undefined ? citation : list[idx].citation
-    };
-    list[idx] = updated;
-    faunaStore[parkId] = list;
-    writeJsonSafe(FAUNA_FILE, faunaStore);
-    res.json(updated);
-});
-
-app.delete('/api/fauna/:parkId/:id', (req, res) => {
-    const { parkId, id } = req.params;
-    faunaStore = readJsonSafe(FAUNA_FILE, faunaStore || {});
-    const list = faunaStore[parkId] || [];
+    const list = faunaStore[estateId] || [];
     const next = list.filter(e => e.id !== id);
-    faunaStore[parkId] = next;
+    faunaStore[estateId] = next;
     writeJsonSafe(FAUNA_FILE, faunaStore);
     res.json({ success: true });
 });
 
-app.get('/api/spottings/:parkId', (req, res) => {
-    const { parkId } = req.params;
+app.get('/api/spottings/:estateId', (req, res) => {
+    const { estateId } = req.params;
     spottingsStore = readJsonSafe(SPOTTINGS_FILE, spottingsStore || {});
-    const list = (spottingsStore[parkId] || []).filter(s => {
+    const list = (spottingsStore[estateId] || []).filter(s => {
         const ts = new Date(s.timestamp).getTime();
         const cutoff = Date.now() - 24 * 60 * 60 * 1000;
         return ts >= cutoff;
@@ -838,10 +101,10 @@ app.get('/api/spottings/:parkId', (req, res) => {
     res.json(list);
 });
 
-app.get('/api/audio/:parkId', (req, res) => {
-    const { parkId } = req.params;
+app.get('/api/audio/:estateId', (req, res) => {
+    const { estateId } = req.params;
     audioStore = readJsonSafe(AUDIO_FILE, audioStore || {});
-    const list = audioStore[parkId] || [];
+    const list = audioStore[estateId] || [];
     res.json(list);
 });
 
@@ -1110,9 +373,9 @@ app.post('/api/analyze/vision', async (req, res) => {
 // ==========================================
 
 app.post('/api/recommend-action', async (req, res) => {
-    const { alertType, zone, parkName, context } = req.body || {};
+    const { alertType, zone, estateName, context } = req.body || {};
     const key = process.env.OPENROUTER_API_KEY;
-    const park = (parkName || 'this park').toString();
+    const estate = (estateName || 'this estate').toString();
     const z = (zone || 'unknown zone').toString();
     const ctx = (context || '').toString();
 
@@ -1134,7 +397,7 @@ app.post('/api/recommend-action', async (req, res) => {
                         },
                         {
                             role: 'user',
-                            content: `Alert type: ${alertType || 'unknown'}. Zone: ${z}. Park: ${park}. ${ctx ? 'Context: ' + ctx : ''}`
+                            content: `Alert type: ${alertType || 'unknown'}. Zone: ${z}. Estate: ${estate}. ${ctx ? 'Context: ' + ctx : ''}`
                         }
                     ],
                     max_tokens: 80,
@@ -1254,12 +517,12 @@ app.get('/api/gbif/:lat/:lon', async (req, res) => {
 // ==========================================
 // iNaturalist Live Sightings Proxy
 // ==========================================
-// Maps each park to its real-world coordinates and fetches research-grade
-// wildlife observations from iNaturalist within a per-park radius.
+// Maps each estate to its real-world coordinates and fetches research-grade
+// wildlife observations from iNaturalist within a per-estate radius.
 // Returns data normalized to the Spotting interface used by SpeciesIntelPage
 // and CameraFeedsPage. Proxied server-side to avoid browser CORS issues.
 
-const PARK_COORDS = {
+const ESTATE_COORDS = {
     'nagarhole':   { lat: 11.9833, lon: 76.1167, radius: 35 },
     'corbett':     { lat: 29.5300, lon: 78.7747, radius: 45 },
     'kaziranga':   { lat: 26.5775, lon: 93.1711, radius: 30 },
@@ -1270,13 +533,13 @@ const PARK_COORDS = {
 
 const ZONES = ['Z1','Z2','Z3','Z4','Z5','Z6','Z7','Z8'];
 
-app.get('/api/inaturalist/:parkId', async (req, res) => {
-    const { parkId } = req.params;
-    const coords = PARK_COORDS[parkId];
-    if (!coords) return res.status(404).json({ error: 'Unknown park' });
+app.get('/api/inaturalist/:estateId', async (req, res) => {
+    const { estateId } = req.params;
+    const coords = ESTATE_COORDS[estateId];
+    if (!coords) return res.status(404).json({ error: 'Unknown estate' });
 
     try {
-        console.log(`[iNaturalist] Fetching research-grade sightings for ${parkId}...`);
+        console.log(`[iNaturalist] Fetching research-grade sightings for ${estateId}...`);
         // taxon_id=1 = Animalia (all animals). quality_grade=research = community-verified.
         const url = `https://api.inaturalist.org/v1/observations?lat=${coords.lat}&lng=${coords.lon}&radius=${coords.radius}&quality_grade=research&per_page=20&order=desc&order_by=observed_on&taxon_id=1`;
         const response = await fetch(url, {
@@ -1306,7 +569,7 @@ app.get('/api/inaturalist/:parkId', async (req, res) => {
                 const placeGuess = obs.place_guess || '';
                 return {
                     id: `inat-${obs.id}`,
-                    parkId,
+                    estateId,
                     speciesCommonName: commonName,
                     scientificName,
                     zone,
@@ -1319,10 +582,10 @@ app.get('/api/inaturalist/:parkId', async (req, res) => {
                 };
             });
 
-        console.log(`[iNaturalist] Returning ${results.length} sightings for ${parkId}`);
+        console.log(`[iNaturalist] Returning ${results.length} sightings for ${estateId}`);
         res.json(results);
     } catch (err) {
-        console.error(`[iNaturalist] Error for ${parkId}:`, err.message);
+        console.error(`[iNaturalist] Error for ${estateId}:`, err.message);
         res.status(503).json({ error: err.message, results: [] });
     }
 });
@@ -1358,18 +621,18 @@ app.get('/api/wiki-image/:species', async (req, res) => {
 // 7b. SELECTIVE ALERT MANAGEMENT
 // ==========================================
 
-// GET /api/alerts — returns current in-memory recentAlerts, optionally filtered by parkId
+// GET /api/alerts — returns current in-memory recentAlerts, optionally filtered by estateId
 app.get('/api/alerts', (req, res) => {
-    const { parkId } = req.query;
-    const filtered = parkId
-        ? recentAlerts.filter(a => !a.parkId || a.parkId === parkId)
+    const { estateId } = req.query;
+    const filtered = estateId
+        ? recentAlerts.filter(a => !a.estateId || a.estateId === estateId)
         : recentAlerts;
     res.status(200).json({ alerts: filtered, total: filtered.length });
 });
 
 // POST /api/webhooks/purge-selected — removes specific alerts by ID and broadcasts
 app.post('/api/webhooks/purge-selected', (req, res) => {
-    const { ids, parkId } = req.body;
+    const { ids, estateId } = req.body;
     if (!ids || !Array.isArray(ids) || ids.length === 0) {
         return res.status(400).json({ success: false, message: 'No alert IDs provided.' });
     }
@@ -1377,8 +640,8 @@ app.post('/api/webhooks/purge-selected', (req, res) => {
     const before = recentAlerts.length;
     recentAlerts = recentAlerts.filter(a => !idSet.has(a.id));
     const removed = before - recentAlerts.length;
-    broadcastEvent('SELECTIVE_PURGE', { ids: Array.from(idSet), parkId: parkId || null });
-    console.log(`[Admin] Selective purge: removed ${removed} alert(s) for park ${parkId || 'all'}`);
+    broadcastEvent('SELECTIVE_PURGE', { ids: Array.from(idSet), estateId: estateId || null });
+    console.log(`[Admin] Selective purge: removed ${removed} alert(s) for estate ${estateId || 'all'}`);
     res.status(200).json({ success: true, removed, remaining: recentAlerts.length });
 });
 
@@ -1390,7 +653,7 @@ app.post('/api/webhooks/purge-selected', (req, res) => {
 //
 // Timings:  Acoustic   3–8 min  |  Camera   5–12 min  |  Community  8–15 min
 
-const SIM_PARK_IDS = ['nagarhole', 'corbett', 'kaziranga', 'sundarbans', 'maasai-mara', 'kruger'];
+const SIM_ESTATE_IDS = ['nagarhole', 'corbett', 'kaziranga', 'sundarbans', 'maasai-mara', 'kruger'];
 const SIM_ZONES    = ['Z1', 'Z2', 'Z3', 'Z4', 'Z5', 'Z6', 'Z7', 'Z8'];
 
 function simRandom(arr) {
@@ -1411,7 +674,7 @@ function scheduleSim(minMs, maxMs, generator) {
 
 // ── Acoustic simulation (45s–90s) ──────────────────────────────────────────
 scheduleSim(45 * 1000, 90 * 1000, () => {
-    const parkId = simRandom(SIM_PARK_IDS);
+    const estateId = simRandom(SIM_ESTATE_IDS);
     const zone   = simRandom(SIM_ZONES);
     const events = [
         { subType: 'GUNSHOT',        confidence: 0.87 + Math.random() * 0.12, description: 'Acoustic sensor detected high-caliber discharge pattern in restricted sector.' },
@@ -1425,18 +688,18 @@ scheduleSim(45 * 1000, 90 * 1000, () => {
         type:        'ACOUSTIC',
         subType:     e.subType,
         zone,
-        parkId,
+        estateId,
         confidence,
         description: e.description,
         timestamp:   new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
         priority:    'HIGH',
     });
-    console.log(`[SIM] Acoustic ${e.subType} (conf ${confidence}) → ${parkId} ${zone}`);
+    console.log(`[SIM] Acoustic ${e.subType} (conf ${confidence}) → ${estateId} ${zone}`);
 });
 
 // ── Camera trap simulation (60s–120s) ─────────────────────────────────────
 scheduleSim(60 * 1000, 120 * 1000, () => {
-    const parkId = simRandom(SIM_PARK_IDS);
+    const estateId = simRandom(SIM_ESTATE_IDS);
     const zone   = simRandom(SIM_ZONES);
     const events = [
         { subType: 'SPECIES_DETECTED',   confidence: 0.80 + Math.random() * 0.18, description: 'Camera trap identified animal presence in patrol sector.',                                   priority: 'ELEVATED' },
@@ -1450,21 +713,21 @@ scheduleSim(60 * 1000, 120 * 1000, () => {
         type:        'CAMERA',
         subType:     e.subType,
         zone,
-        parkId,
+        estateId,
         confidence,
         description: e.description,
         timestamp:   new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
         priority:    e.priority,
     });
-    console.log(`[SIM] Camera ${e.subType} (conf ${confidence}) → ${parkId} ${zone}`);
+    console.log(`[SIM] Camera ${e.subType} (conf ${confidence}) → ${estateId} ${zone}`);
 });
 
 // ── Community report simulation (90s–180s) ────────────────────────────────
 scheduleSim(90 * 1000, 180 * 1000, () => {
-    const parkId = simRandom(SIM_PARK_IDS);
+    const estateId = simRandom(SIM_ESTATE_IDS);
     const zone   = simRandom(SIM_ZONES);
     const events = [
-        { subType: 'SUSPICIOUS_VEHICLE', description: 'Community member reported unidentified vehicle near park boundary.' },
+        { subType: 'SUSPICIOUS_VEHICLE', description: 'Community member reported unidentified vehicle near estate boundary.' },
         { subType: 'SNARE_DETECTED',     description: 'Active wire snare line reported by local community patrol member.' },
         { subType: 'DEAD_ANIMAL',        description: 'Animal carcass discovered — possible poaching or disease event.' },
         { subType: 'POACHER_CAMP',       description: 'Evidence of recent illegal encampment found by community scout.' },
@@ -1475,21 +738,21 @@ scheduleSim(90 * 1000, 180 * 1000, () => {
         type:        'COMMUNITY',
         subType:     e.subType,
         zone,
-        parkId,
+        estateId,
         description: e.description,
         timestamp:   new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
         priority:    'ELEVATED',
     });
-    console.log(`[SIM] Community ${e.subType} → ${parkId} ${zone}`);
+    console.log(`[SIM] Community ${e.subType} → ${estateId} ${zone}`);
 });
 
 // ── Environment Pulse Simulation (30s) ──────────────────────────────────
 // Keeps the Threat Matrix alive across all dashboards
 scheduleSim(30 * 1000, 30 * 1000, async () => {
     try {
-        // Broadcast updates for a rotating park to keep the data fresh
-        const parkId = SIM_PARK_IDS[Math.floor(Date.now() / 30000) % SIM_PARK_IDS.length];
-        const coords = PARK_COORDS[parkId];
+        // Broadcast updates for a rotating estate to keep the data fresh
+        const estateId = SIM_ESTATE_IDS[Math.floor(Date.now() / 30000) % SIM_ESTATE_IDS.length];
+        const coords = ESTATE_COORDS[estateId];
         if (!coords) return;
 
         const resp = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${coords.lat}&longitude=${coords.lon}&current=temperature_2m,wind_speed_10m,precipitation_probability,weather_code&timezone=auto`);
@@ -1499,7 +762,7 @@ scheduleSim(30 * 1000, 30 * 1000, async () => {
         const threat = computeThreatMultiplier(lun, cur.wind_speed_10m, cur.precipitation_probability ?? 0);
 
         broadcastEvent('ENVIRONMENT_UPDATE', {
-            parkId,
+            estateId,
             temperature: cur.temperature_2m,
             windSpeed: cur.wind_speed_10m,
             precipitationProbability: cur.precipitation_probability ?? 0,

@@ -1,6 +1,6 @@
 import React, { useState, useCallback } from 'react';
 import { AlertTriangle, MapPin, Camera, Radio, ShieldAlert, Activity, X, Leaf, FileText, Loader2, Download, Brain } from 'lucide-react';
-import { AlertEvent } from '../lib/parksData';
+import { AlertEvent } from '../lib/estatesData';
 import NarrativePanel from './NarrativePanel';
 import HypothesisCard from './HypothesisCard';
 import PrivateAlertDetail from './PrivateAlertDetail';
@@ -56,7 +56,7 @@ interface IntelBrief {
 
 async function generateIntelBrief(alert: AlertEvent, recentAlerts: AlertEvent[]): Promise<IntelBrief> {
   const relatedCount = recentAlerts.filter(a => a.zone === alert.zone && a.id !== alert.id).length;
-  const prompt = `You are VANGUARD — an elite AI wildlife protection intelligence system serving a government national park.
+  const prompt = `You are VANGUARD — an elite AI wildlife protection intelligence system serving a government national estate.
 Generate a concise tactical intelligence brief for the following alert (respond with valid JSON only):
 
 ALERT:

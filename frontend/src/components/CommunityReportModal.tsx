@@ -1,14 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { X, Send, AlertTriangle, Image as ImageIcon, MapPin, Clock, Calendar } from 'lucide-react';
-import { PARKS } from '../lib/parksData';
+import { ESTATES } from '../lib/estatesData';
 
 interface CommunityReportModalProps {
     onClose: () => void;
-    parkId: string;
+    estateId: string;
 }
 
-const CommunityReportModal: React.FC<CommunityReportModalProps> = ({ onClose, parkId }) => {
-    const park = PARKS.find(p => p.id === parkId);
+const CommunityReportModal: React.FC<CommunityReportModalProps> = ({ onClose, estateId }) => {
+    const estate = ESTATES.find(p => p.id === estateId);
     const [description, setDescription] = useState('');
     const [subType, setSubType] = useState('SNARE_DETECTED');
     const [zone, setZone] = useState('Z1');
@@ -34,16 +34,16 @@ const CommunityReportModal: React.FC<CommunityReportModalProps> = ({ onClose, pa
                     setGeoLocation({ lat: pos.coords.latitude, lon: pos.coords.longitude });
                 },
                 () => {
-                    // Fallback to park center coordinates
-                    if (park) {
-                        setGeoLocation({ lat: park.centerCoordinates[0], lon: park.centerCoordinates[1] });
+                    // Fallback to estate center coordinates
+                    if (estate) {
+                        setGeoLocation({ lat: estate.centerCoordinates[0], lon: estate.centerCoordinates[1] });
                     }
                 }
             );
-        } else if (park) {
-            setGeoLocation({ lat: park.centerCoordinates[0], lon: park.centerCoordinates[1] });
+        } else if (estate) {
+            setGeoLocation({ lat: estate.centerCoordinates[0], lon: estate.centerCoordinates[1] });
         }
-    }, [parkId]);
+    }, [estateId]);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -53,12 +53,12 @@ const CommunityReportModal: React.FC<CommunityReportModalProps> = ({ onClose, pa
         setError(null);
 
         const payload = {
-            parkId,
+            estateId,
             zone,
             type: 'COMMUNITY',
             subType,
             description: `[${currentTime.toISOString()}] [${geoLocation ? `${geoLocation.lat.toFixed(4)},${geoLocation.lon.toFixed(4)}` : 'Unknown'}] ${description}`,
-            location: geoLocation ? [geoLocation.lat, geoLocation.lon] : (park?.centerCoordinates || [0, 0])
+            location: geoLocation ? [geoLocation.lat, geoLocation.lon] : (estate?.centerCoordinates || [0, 0])
         };
 
         try {
@@ -82,7 +82,7 @@ const CommunityReportModal: React.FC<CommunityReportModalProps> = ({ onClose, pa
         }
     };
 
-    if (!park) return null;
+    if (!estate) return null;
 
     const dateStr = currentTime.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }).toUpperCase();
     const timeStr = currentTime.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
@@ -170,7 +170,7 @@ const CommunityReportModal: React.FC<CommunityReportModalProps> = ({ onClose, pa
                                         onChange={(e) => setZone(e.target.value)}
                                         className="bg-[#0A0F1A] border border-vanguard-border text-white text-sm p-2 rounded focus:border-vanguard-camera outline-none font-mono"
                                     >
-                                        {Object.keys(park.zones).map(z => (
+                                        {Object.keys(estate.zones).map(z => (
                                             <option key={z} value={z}>{z}</option>
                                         ))}
                                     </select>

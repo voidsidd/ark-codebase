@@ -1,17 +1,17 @@
 import React from 'react';
 import { X, Camera, Wifi, WifiOff, Link } from 'lucide-react';
-import { PARKS } from '../lib/parksData';
+import { ESTATES } from '../lib/estatesData';
 
 interface CameraFeedsModalProps {
     onClose: () => void;
-    parkId: string;
+    estateId: string;
 }
 
-const CameraFeedsModal: React.FC<CameraFeedsModalProps> = ({ onClose, parkId }) => {
-    const park = PARKS.find(p => p.id === parkId);
+const CameraFeedsModal: React.FC<CameraFeedsModalProps> = ({ onClose, estateId }) => {
+    const estate = ESTATES.find(p => p.id === estateId);
 
-    // Mock cameras based on selected park zones
-    const zones = park ? Object.keys(park.zones) : ['Z1', 'Z2', 'Z3', 'Z4'];
+    // Mock cameras based on selected estate zones
+    const zones = estate ? Object.keys(estate.zones) : ['Z1', 'Z2', 'Z3', 'Z4'];
     
     const cameras = [
         { id: 'CAM-01', zone: zones[0] || 'Z1', status: 'ONLINE', model: 'TrailGuard AI v2', threat: 'NONE', image: 'https://images.unsplash.com/photo-1610419993549-74d1252119eb?q=80&w=800&auto=format&fit=crop' },

@@ -16,7 +16,7 @@ import {
   UrlTemplateImageryProvider,
 } from 'cesium';
 import 'cesium/Build/Cesium/Widgets/widgets.css';
-import { resolveParkId } from '../lib/parksData';
+import { resolveEstateId } from '../lib/estatesData';
 import type { ZonePolygon } from './ZoneManager';
 
 Ion.defaultAccessToken = import.meta.env.VITE_CESIUM_ION_TOKEN || '';
@@ -45,15 +45,15 @@ interface EstateBoundaryData {
 }
 
 interface GlobeViewerProps {
-  parkId: string;
+  estateId: string;
   zones?: Zone[];
-  zonePolygons?: ZonePolygon[]; // actual park polygon shapes from parksData
+  zonePolygons?: ZonePolygon[]; // actual estate polygon shapes from estatesData
   alerts?: any[];
   onZoneClick?: (zone: Zone) => void;
   estateBoundary?: EstateBoundaryData | null;
 }
 
-const PARK_COORDS: Record<string, { lat: number; lon: number; alt: number }> = {
+const ESTATE_COORDS: Record<string, { lat: number; lon: number; alt: number }> = {
   nagarhole:     { lat: 11.9833, lon: 76.1167, alt: 15_000_000 },
   corbett:       { lat: 29.5300, lon: 78.7747, alt: 15_000_000 },
   kaziranga:     { lat: 26.5775, lon: 93.1711, alt: 15_000_000 },
@@ -73,15 +73,15 @@ const MIN_PITCH = CesiumMath.toRadians(-89.9); // never quite straight down (avo
 const MAX_PITCH = CesiumMath.toRadians(-5);    // never look up above horizon
 
 export const GlobeViewer = forwardRef<GlobeRef, GlobeViewerProps>(
-  ({ parkId, zones = [], zonePolygons = [], estateBoundary }, ref) => {
-    const resolvedParkId = resolveParkId(parkId);
+  ({ estateId, zones = [], zonePolygons = [], estateBoundary }, ref) => {
+    const resolvedEstateId = resolveEstateId(estateId);
     const isEstate = !!estateBoundary;
     const containerRef = useRef<HTMLDivElement>(null);
     const viewerRef    = useRef<Viewer | null>(null);
-    const parkIdRef    = useRef(parkId);
+    const estateIdRef    = useRef(estateId);
     const zonesRef     = useRef(zones);
 
-    parkIdRef.current = parkId;
+    estateIdRef.current = estateId;
     zonesRef.current  = zones;
 
     useImperativeHandle(ref, () => ({
@@ -273,7 +273,7 @@ export const GlobeViewer = forwardRef<GlobeRef, GlobeViewerProps>(
       if (containerRef.current) resizeObserver.observe(containerRef.current);
 
       // For estate mode: fly to estate centroid at close-up zoom
-      // For park mode: use instant setView (no animation) for maximum speed
+      // For estate mode: use instant setView (no animation) for maximum speed
       const initView = () => {
         if (isEstate && estateBoundary) {
           const lat = estateBoundary.centroid_lat ?? 20;
@@ -293,7 +293,7 @@ export const GlobeViewer = forwardRef<GlobeRef, GlobeViewerProps>(
           }, 600);
         } else {
           // PERFORMANCE: setView is instant (no animation delay)
-          const c = PARK_COORDS[resolvedParkId] || PARK_COORDS['nagarhole'];
+          const c = ESTATE_COORDS[resolvedEstateId] || ESTATE_COORDS['nagarhole'];
           viewer.camera.setView({
             destination: Cartesian3.fromDegrees(c.lon, c.lat, c.alt),
             orientation: {
@@ -319,7 +319,7 @@ export const GlobeViewer = forwardRef<GlobeRef, GlobeViewerProps>(
       const viewer = viewerRef.current;
       if (!viewer || viewer.isDestroyed()) return;
 
-      const c = PARK_COORDS[parkId] || PARK_COORDS['nagarhole'];
+      const c = ESTATE_COORDS[estateId] || ESTATE_COORDS['nagarhole'];
       setTimeout(() => {
         if (!viewer.isDestroyed()) {
           viewer.camera.flyTo({
@@ -333,7 +333,7 @@ export const GlobeViewer = forwardRef<GlobeRef, GlobeViewerProps>(
           });
         }
       }, 200);
-    }, [parkId]);
+    }, [estateId]);
 
     // ── Re-render zones when zone data or alert status changes ────────────
     useEffect(() => {
@@ -342,11 +342,11 @@ export const GlobeViewer = forwardRef<GlobeRef, GlobeViewerProps>(
 
       viewer.entities.removeAll();
 
-      // Priority: render actual polygon zones from parksData (matches the 2D map exactly)
+      // Priority: render actual polygon zones from estatesData (matches the 2D map exactly)
       if (zonePolygons && zonePolygons.length > 0) {
         zonePolygons.forEach(zone => {
           const colors = ZONE_COLORS[zone.status] || ZONE_COLORS.normal;
-          // parksData stores [lat, lon] but Cesium needs fromDegrees(lon, lat)
+          // estatesData stores [lat, lon] but Cesium needs fromDegrees(lon, lat)
           const positions = zone.coords.map(([lat, lon]) =>
             Cartesian3.fromDegrees(lon, lat)
           );
@@ -446,16 +446,16 @@ export const GlobeViewer = forwardRef<GlobeRef, GlobeViewerProps>(
         return;
       }
 
-      // ── Park mode: render zone polygons as ground-clamped outlines ──────
-      // Use parksData zones directly so shapes match the 2D MapPanel exactly.
+      // ── Estate mode: render zone polygons as ground-clamped outlines ──────
+      // Use estatesData zones directly so shapes match the 2D MapPanel exactly.
       // Do nothing here — zone polygons are handled by the zones useEffect above.
-    }, [parkId, isEstate, estateBoundary]);
+    }, [estateId, isEstate, estateBoundary]);
 
 
     const handleReset = () => {
       const viewer = viewerRef.current;
       if (!viewer || viewer.isDestroyed()) return;
-      const c = PARK_COORDS[resolvedParkId] || PARK_COORDS['nagarhole'];
+      const c = ESTATE_COORDS[resolvedEstateId] || ESTATE_COORDS['nagarhole'];
       viewer.camera.setView({
         destination: Cartesian3.fromDegrees(c.lon, c.lat, c.alt),
         orientation: {
