@@ -1,5 +1,5 @@
 import jsPDF from 'jspdf';
-import { AlertEvent } from '../lib/estatesData';
+import { AlertEvent } from '../lib/parksData';
 
 export interface LegalProfile {
   district: string;
@@ -64,7 +64,7 @@ const EXHIBIT_IMAGES: Record<string, [string, string]> = {
     'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=800&q=80',   // security fence/perimeter
     'https://images.unsplash.com/photo-1542621334-a254cf47733d?w=800&q=80',   // plantation tree rows
   ],
-  // Camera — Vehicle detected: estateed/suspicious vehicle near plantation
+  // Camera — Vehicle detected: parked/suspicious vehicle near plantation
   VEHICLE_DETECTED: [
     'https://images.unsplash.com/photo-1519750157634-b6d493a0f77c?w=800&q=80',   // vehicle on dirt track
     'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800&q=80',   // forest road entry

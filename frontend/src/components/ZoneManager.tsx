@@ -1,5 +1,5 @@
 import { useRef, useEffect, useState, lazy, Suspense } from 'react';
-import { getEstateById, resolveEstateId } from '../lib/estatesData';
+import { getParkById, resolveParkId } from '../lib/parksData';
 import { useLiveAlerts } from '../lib/liveStream';
 
 // Dynamically import GlobeViewer to code-split Cesium and avoid 2500+ dev network requests
@@ -14,15 +14,15 @@ interface EstateBoundaryData {
 
 export interface ZonePolygon {
   id: string;
-  coords: [number, number][]; // [lat, lon] pairs matching estatesData format
+  coords: [number, number][]; // [lat, lon] pairs matching parksData format
   status: 'critical' | 'warning' | 'normal';
 }
 
 export default function ZoneManager({
-  estateId,
+  parkId,
   estateBoundary,
 }: {
-  estateId: string | null;
+  parkId: string | null;
   estateBoundary?: EstateBoundaryData | null;
 }) {
   const globeRef = useRef<any>(null);
@@ -31,16 +31,16 @@ export default function ZoneManager({
   // Defer rendering until DOM is fully painted — avoids Cesium mount race
   useEffect(() => { setMounted(true); }, []);
 
-  // Resolve any Supabase UUID → short estate ID ('corbett', 'nagarhole', etc.)
-  const resolvedId = estateId ? resolveEstateId(estateId) : null;
-  const estate = resolvedId ? getEstateById(resolvedId) : null;
+  // Resolve any Supabase UUID → short park ID ('corbett', 'nagarhole', etc.)
+  const resolvedId = parkId ? resolveParkId(parkId) : null;
+  const park = resolvedId ? getParkById(resolvedId) : null;
 
   // Subscribe to live alerts to colour globe zones in real-time
   const { alerts } = useLiveAlerts(resolvedId);
 
   // Derive per-zone status from live alert priorities
-  const zonePolygons: ZonePolygon[] = estate
-    ? Object.entries(estate.zones).map(([zoneId, coords]) => {
+  const zonePolygons: ZonePolygon[] = park
+    ? Object.entries(park.zones).map(([zoneId, coords]) => {
         const zoneAlerts = alerts.filter(a => a.zone === zoneId);
         let status: 'critical' | 'warning' | 'normal' = 'normal';
         if (zoneAlerts.some(a => a.priority === 'CRITICAL' || a.priority === 'HIGH')) {
@@ -66,7 +66,7 @@ export default function ZoneManager({
             ref={globeRef}
             zones={[]}
             zonePolygons={zonePolygons}
-            estateId={resolvedId ?? 'estate'}
+            parkId={resolvedId ?? 'estate'}
             estateBoundary={estateBoundary}
           />
         </Suspense>

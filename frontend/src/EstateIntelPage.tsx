@@ -93,7 +93,7 @@ const EstateIntelPage: React.FC = () => {
       <Header
         onBack={() => id ? navigate(`/estate/${id}`) : navigate('/dashboard')}
         backLabel="← BACK"
-        estateId={estateName}
+        parkId={estateName}
         onSpeciesIntel={() => {}}
       />
 

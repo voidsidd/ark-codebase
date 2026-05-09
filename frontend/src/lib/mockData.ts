@@ -1,5 +1,5 @@
 // Static Mock Data for Step 1
-export const ESTATE_CENTER: [number, number] = [11.9833, 76.1167];
+export const PARK_CENTER: [number, number] = [11.9833, 76.1167];
 
 // Roughly drawing 8 zones around Nagarhole
 export const ZONES = {

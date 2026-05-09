@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ESTATES, Estate } from './lib/estatesData';
+import { PARKS, Park } from './lib/parksData';
 import { Shield, Github, FileText, Mail, ArrowRight, Radio } from 'lucide-react';
 
 // Custom hook for animated counter
@@ -65,18 +65,18 @@ const Particles = () => {
 const LandingPage: React.FC = () => {
     const navigate = useNavigate();
     const [transitionState, setTransitionState] = useState<'idle' | 'pulsing' | 'loading'>('idle');
-    const [selectedEstate, setSelectedEstate] = useState<Estate | null>(null);
+    const [selectedPark, setSelectedPark] = useState<Park | null>(null);
 
-    const handleEstateClick = (estate: Estate) => {
+    const handleParkClick = (park: Park) => {
         if (transitionState !== 'idle') return;
 
-        setSelectedEstate(estate);
+        setSelectedPark(park);
         setTransitionState('pulsing');
 
         setTimeout(() => {
             setTransitionState('loading');
             setTimeout(() => {
-                navigate(`/estate/${estate.id}`);
+                navigate(`/park/${park.id}`);
             }, 1500);
         }, 200);
     };
@@ -111,47 +111,47 @@ const LandingPage: React.FC = () => {
                 <h2 className="text-center text-sm font-bold tracking-[0.3em] text-vanguard-species mb-10">SELECT A PROTECTED AREA</h2>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {ESTATES.map((estate) => (
+                    {PARKS.map((park) => (
                         <div
-                            key={estate.id}
-                            onClick={() => handleEstateClick(estate)}
-                            className={`group relative h-64 rounded bg-gradient-to-br ${estate.gradient} border border-white/5 cursor-pointer overflow-hidden transition-all duration-300 ease-out hover:-translate-y-1 hover:shadow-2xl flex flex-col justify-between p-5`}
+                            key={park.id}
+                            onClick={() => handleParkClick(park)}
+                            className={`group relative h-64 rounded bg-gradient-to-br ${park.gradient} border border-white/5 cursor-pointer overflow-hidden transition-all duration-300 ease-out hover:-translate-y-1 hover:shadow-2xl flex flex-col justify-between p-5`}
                             style={{
-                                borderColor: selectedEstate?.id === estate.id && transitionState === 'pulsing' ? estate.accentColor : undefined,
-                                boxShadow: selectedEstate?.id === estate.id && transitionState === 'pulsing' ? `0 0 30px ${estate.accentColor}` : undefined,
+                                borderColor: selectedPark?.id === park.id && transitionState === 'pulsing' ? park.accentColor : undefined,
+                                boxShadow: selectedPark?.id === park.id && transitionState === 'pulsing' ? `0 0 30px ${park.accentColor}` : undefined,
                             }}
                         >
                             <div className="absolute inset-0 bg-black/40 group-hover:bg-black/20 transition-colors duration-300"></div>
 
                             <div className="relative z-10 flex justify-between items-start">
                                 <span className="text-sm tracking-widest text-white/80 flex items-center gap-2">
-                                    <span className="text-lg">{estate.countryFlag}</span> {estate.country.toUpperCase()}
+                                    <span className="text-lg">{park.countryFlag}</span> {park.country.toUpperCase()}
                                 </span>
                             </div>
 
                             <div className="relative z-10 mt-auto mb-4">
-                                <h3 className="text-3xl font-bold font-sans tracking-wide mb-1 transition-transform duration-300 group-hover:translate-x-1">{estate.name}</h3>
-                                <p className="text-sm text-white/60 font-sans">{estate.ecosystem}</p>
+                                <h3 className="text-3xl font-bold font-sans tracking-wide mb-1 transition-transform duration-300 group-hover:translate-x-1">{park.name}</h3>
+                                <p className="text-sm text-white/60 font-sans">{park.ecosystem}</p>
                             </div>
 
                             <div className="relative z-10 grid grid-cols-3 gap-2 border-t border-white/10 pt-4">
                                 <div className="flex flex-col">
                                     <span className="text-[10px] text-white/40 font-mono tracking-wider">AREA (HA)</span>
-                                    <span className="text-xs font-mono font-semibold" style={{ color: estate.accentColor }}>
-                                        {estate.area.toLocaleString()}
+                                    <span className="text-xs font-mono font-semibold" style={{ color: park.accentColor }}>
+                                        {park.area.toLocaleString()}
                                     </span>
                                 </div>
                                 <div className="flex flex-col">
                                     <span className="text-[10px] text-white/40 font-mono tracking-wider truncate">SPECIES</span>
-                                    <span className="text-xs font-mono font-semibold text-white/90 truncate" title={estate.primarySpecies}>
-                                        {estate.primarySpecies.split(',')[0]}
+                                    <span className="text-xs font-mono font-semibold text-white/90 truncate" title={park.primarySpecies}>
+                                        {park.primarySpecies.split(',')[0]}
                                     </span>
                                 </div>
                                 <div className="flex flex-col">
                                     <span className="text-[10px] text-white/40 font-mono tracking-wider">SENSORS</span>
                                     <span className="text-xs font-mono font-semibold text-white/90">
                                         <Radio className="w-3 h-3 inline mr-1 opacity-70" />
-                                        {estate.activeSensors}
+                                        {park.activeSensors}
                                     </span>
                                 </div>
                             </div>
@@ -159,7 +159,7 @@ const LandingPage: React.FC = () => {
                             <div className="absolute bottom-4 right-4 z-20 translate-y-8 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-300">
                                 <div
                                     className="w-10 h-10 rounded-full flex items-center justify-center text-white"
-                                    style={{ backgroundColor: estate.accentColor }}
+                                    style={{ backgroundColor: park.accentColor }}
                                 >
                                     <ArrowRight className="w-5 h-5" />
                                 </div>
@@ -190,10 +190,10 @@ const LandingPage: React.FC = () => {
             </footer>
 
             {/* Transition Overlay */}
-            {transitionState === 'loading' && selectedEstate && (
+            {transitionState === 'loading' && selectedPark && (
                 <div className="fixed inset-0 z-50 bg-[#0A0F1A] flex flex-col items-center justify-center animate-in fade-in duration-400">
                     <h2 className="text-4xl md:text-6xl font-bold font-sans tracking-wider mb-6 text-white text-center">
-                        {selectedEstate.name}
+                        {selectedPark.name}
                     </h2>
                     <div className="text-sm font-mono tracking-widest text-vanguard-species mb-12">
                         INITIALIZING VANGUARD COMMAND CENTER
@@ -202,7 +202,7 @@ const LandingPage: React.FC = () => {
                         <div
                             className="h-full"
                             style={{
-                                backgroundColor: selectedEstate.accentColor,
+                                backgroundColor: selectedPark.accentColor,
                                 animation: 'load-bar 1.5s ease-in-out forwards',
                             }}
                         ></div>

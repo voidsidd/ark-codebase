@@ -1,10 +1,10 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { X, Activity, Play, Pause, AlertTriangle, Volume2, MapPin, Clock } from 'lucide-react';
-import { ESTATES } from '../lib/estatesData';
+import { PARKS } from '../lib/parksData';
 
 interface SoundAnalysisModalProps {
     onClose: () => void;
-    estateId: string;
+    parkId: string;
 }
 
 type ThreatLevel = 'THREAT' | 'WILDLIFE' | 'AMBIENT';
@@ -18,7 +18,7 @@ interface SampleClip {
 
 interface AudioEvent {
     id: string;
-    estateId: string;
+    parkId: string;
     zone: string;
     timestamp: string;
     classification: string;
@@ -55,8 +55,8 @@ const threatLabelText: Record<ThreatLevel, string> = {
     AMBIENT: 'AMBIENT'
 };
 
-const SoundAnalysisModal: React.FC<SoundAnalysisModalProps> = ({ onClose, estateId }) => {
-    const estate = useMemo(() => ESTATES.find(p => p.id === estateId), [estateId]);
+const SoundAnalysisModal: React.FC<SoundAnalysisModalProps> = ({ onClose, parkId }) => {
+    const park = useMemo(() => PARKS.find(p => p.id === parkId), [parkId]);
     const [selectedSample, setSelectedSample] = useState<SampleClip | null>(null);
     const [isPlaying, setIsPlaying] = useState(false);
     const [customAudioName, setCustomAudioName] = useState<string | null>(null);
@@ -66,14 +66,14 @@ const SoundAnalysisModal: React.FC<SoundAnalysisModalProps> = ({ onClose, estate
     const [loadingEvents, setLoadingEvents] = useState(false);
 
     useEffect(() => {
-        if (!estateId) return;
+        if (!parkId) return;
         setLoadingEvents(true);
-        fetch(`/api/audio/${estateId}`)
+        fetch(`/api/audio/${parkId}`)
             .then(r => r.json())
             .then(data => setEvents(data || []))
             .catch(() => setEvents([]))
             .finally(() => setLoadingEvents(false));
-    }, [estateId]);
+    }, [parkId]);
 
     const handleSelectSample = (sample: SampleClip) => {
         setSelectedSample(sample);
@@ -268,7 +268,7 @@ const SoundAnalysisModal: React.FC<SoundAnalysisModalProps> = ({ onClose, estate
                             </h2>
                             <span className="text-[10px] font-mono text-gray-500">
                                 Real-time sound classification and 24h acoustic log for{' '}
-                                {estate ? estate.name : 'Active Estate'}
+                                {park ? park.name : 'Active Park'}
                             </span>
                         </div>
                     </div>
@@ -485,7 +485,7 @@ const SoundAnalysisModal: React.FC<SoundAnalysisModalProps> = ({ onClose, estate
                             <div className="h-[260px] overflow-y-auto custom-scrollbar divide-y divide-vanguard-border/60">
                                 {!loadingEvents && events.length === 0 && (
                                     <div className="p-3 text-[10px] font-mono text-gray-500">
-                                        No acoustic events logged in the last 24 hours for this estate. Vanguard will
+                                        No acoustic events logged in the last 24 hours for this park. Vanguard will
                                         populate this view as sensors report in.
                                     </div>
                                 )}

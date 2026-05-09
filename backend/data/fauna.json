@@ -2,7 +2,7 @@
   "nagarhole": [
     {
       "id": "ngh-tiger",
-      "estateId": "nagarhole",
+      "parkId": "nagarhole",
       "commonName": "Bengal Tiger",
       "scientificName": "Panthera tigris tigris",
       "estimatedCount": 150,
@@ -12,7 +12,7 @@
     },
     {
       "id": "ngh-elephant",
-      "estateId": "nagarhole",
+      "parkId": "nagarhole",
       "commonName": "Asian Elephant",
       "scientificName": "Elephas maximus indicus",
       "estimatedCount": 800,
@@ -22,7 +22,7 @@
     },
     {
       "id": "ngh-leopard",
-      "estateId": "nagarhole",
+      "parkId": "nagarhole",
       "commonName": "Indian Leopard",
       "scientificName": "Panthera pardus fusca",
       "estimatedCount": 120,
@@ -34,7 +34,7 @@
   "corbett": [
     {
       "id": "cor-tiger",
-      "estateId": "corbett",
+      "parkId": "corbett",
       "commonName": "Bengal Tiger",
       "scientificName": "Panthera tigris tigris",
       "estimatedCount": 250,
@@ -44,7 +44,7 @@
     },
     {
       "id": "cor-elephant",
-      "estateId": "corbett",
+      "parkId": "corbett",
       "commonName": "Asian Elephant",
       "scientificName": "Elephas maximus indicus",
       "estimatedCount": 1000,
@@ -54,7 +54,7 @@
     },
     {
       "id": "cor-gharial",
-      "estateId": "corbett",
+      "parkId": "corbett",
       "commonName": "Gharial",
       "scientificName": "Gavialis gangeticus",
       "estimatedCount": 40,
@@ -66,7 +66,7 @@
   "kaziranga": [
     {
       "id": "kaz-rhino",
-      "estateId": "kaziranga",
+      "parkId": "kaziranga",
       "commonName": "Indian One-horned Rhinoceros",
       "scientificName": "Rhinoceros unicornis",
       "estimatedCount": 2600,
@@ -76,7 +76,7 @@
     },
     {
       "id": "kaz-elephant",
-      "estateId": "kaziranga",
+      "parkId": "kaziranga",
       "commonName": "Asian Elephant",
       "scientificName": "Elephas maximus indicus",
       "estimatedCount": 1200,
@@ -86,7 +86,7 @@
     },
     {
       "id": "kaz-tiger",
-      "estateId": "kaziranga",
+      "parkId": "kaziranga",
       "commonName": "Bengal Tiger",
       "scientificName": "Panthera tigris tigris",
       "estimatedCount": 120,
@@ -98,7 +98,7 @@
   "sundarbans": [
     {
       "id": "sun-tiger",
-      "estateId": "sundarbans",
+      "parkId": "sundarbans",
       "commonName": "Sundarbans Bengal Tiger",
       "scientificName": "Panthera tigris tigris",
       "estimatedCount": 100,
@@ -108,7 +108,7 @@
     },
     {
       "id": "sun-dolphin",
-      "estateId": "sundarbans",
+      "parkId": "sundarbans",
       "commonName": "Irrawaddy Dolphin",
       "scientificName": "Orcaella brevirostris",
       "estimatedCount": 80,
@@ -118,7 +118,7 @@
     },
     {
       "id": "sun-crocodile",
-      "estateId": "sundarbans",
+      "parkId": "sundarbans",
       "commonName": "Estuarine Crocodile",
       "scientificName": "Crocodylus porosus",
       "estimatedCount": 250,
@@ -130,7 +130,7 @@
   "maasai-mara": [
     {
       "id": "mara-lion",
-      "estateId": "maasai-mara",
+      "parkId": "maasai-mara",
       "commonName": "African Lion",
       "scientificName": "Panthera leo melanochaita",
       "estimatedCount": 850,
@@ -140,7 +140,7 @@
     },
     {
       "id": "mara-elephant",
-      "estateId": "maasai-mara",
+      "parkId": "maasai-mara",
       "commonName": "African Savanna Elephant",
       "scientificName": "Loxodonta africana",
       "estimatedCount": 2500,
@@ -150,7 +150,7 @@
     },
     {
       "id": "mara-rhino",
-      "estateId": "maasai-mara",
+      "parkId": "maasai-mara",
       "commonName": "Black Rhinoceros",
       "scientificName": "Diceros bicornis michaeli",
       "estimatedCount": 40,
@@ -162,27 +162,27 @@
   "kruger": [
     {
       "id": "kru-elephant",
-      "estateId": "kruger",
+      "parkId": "kruger",
       "commonName": "African Savanna Elephant",
       "scientificName": "Loxodonta africana",
       "estimatedCount": 19500,
       "status": "EN",
-      "notes": "SANEstates census (~19–20k).",
-      "citation": "SANEstates; IUCN 2024"
+      "notes": "SANParks census (~19–20k).",
+      "citation": "SANParks; IUCN 2024"
     },
     {
       "id": "kru-white-rhino",
-      "estateId": "kruger",
+      "parkId": "kruger",
       "commonName": "Southern White Rhinoceros",
       "scientificName": "Ceratotherium simum simum",
       "estimatedCount": 2500,
       "status": "NT",
-      "notes": "Population under pressure; SANEstates estimates.",
-      "citation": "SANEstates; IUCN 2024"
+      "notes": "Population under pressure; SANParks estimates.",
+      "citation": "SANParks; IUCN 2024"
     },
     {
       "id": "kru-wild-dog",
-      "estateId": "kruger",
+      "parkId": "kruger",
       "commonName": "African Wild Dog",
       "scientificName": "Lycaon pictus",
       "estimatedCount": 150,

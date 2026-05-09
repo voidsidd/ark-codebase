@@ -1,9 +1,9 @@
 import { Activity } from 'lucide-react';
-import { ESTATES } from '../lib/estatesData';
+import { PARKS } from '../lib/parksData';
 import { useLiveAlerts } from '../lib/liveStream';
 
 interface ZoneStatusProps {
-    estateId?: string | null;
+    parkId?: string | null;
 }
 
 const getStatusColor = (status: string) => {
@@ -14,11 +14,11 @@ const getStatusColor = (status: string) => {
     }
 };
 
-const ZoneStatus: React.FC<ZoneStatusProps> = ({ estateId }) => {
-    const estate = ESTATES.find(p => p.id === estateId);
-    const { alerts } = useLiveAlerts(estateId);
+const ZoneStatus: React.FC<ZoneStatusProps> = ({ parkId }) => {
+    const park = PARKS.find(p => p.id === parkId);
+    const { alerts } = useLiveAlerts(parkId);
 
-    if (!estate) return null;
+    if (!park) return null;
 
     // Dynamically compute the status of Z1-Z8 based on alerts
     const zonesStatus = Array.from({ length: 8 }, (_, i) => {

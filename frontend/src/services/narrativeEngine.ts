@@ -1,5 +1,5 @@
 import { supabase } from '../lib/supabaseClient';
-import { AlertEvent } from '../lib/estatesData';
+import { AlertEvent } from '../lib/parksData';
 
 // ─── In-memory narrative cache (keyed by alert ID) ───────────────────────────
 const narrativeCache = new Map<string, { text: string; generatedAt: string }>();

@@ -84,13 +84,13 @@ const GridBg = () => (
 );
 
 /* ══════════════════════════════════════════════════════════════════
-   ESTATES DATA (inline — no dependency on estatesData.ts which is auth-gated)
+   PARKS DATA (inline — no dependency on parksData.ts which is auth-gated)
    ══════════════════════════════════════════════════════════════════ */
-const MONITORED_ESTATES = [
-    { name: 'Kruger National Estate', country: 'South Africa', flag: '🇿🇦', area: '19,485 km²', species: 'Elephants, Rhinos', rangers: 147, accent: '#DC2626' },
+const MONITORED_PARKS = [
+    { name: 'Kruger National Park', country: 'South Africa', flag: '🇿🇦', area: '19,485 km²', species: 'Elephants, Rhinos', rangers: 147, accent: '#DC2626' },
     { name: 'Sundarbans', country: 'India / Bangladesh', flag: '🇮🇳', area: '10,000 km²', species: 'Bengal Tigers', rangers: 89, accent: '#F59E0B' },
     { name: 'Serengeti', country: 'Tanzania', flag: '🇹🇿', area: '14,750 km²', species: 'Wildebeest, Lions', rangers: 156, accent: '#10B981' },
-    { name: 'Hwange National Estate', country: 'Zimbabwe', flag: '🇿🇼', area: '14,651 km²', species: 'Elephants', rangers: 96, accent: '#8B5CF6' },
+    { name: 'Hwange National Park', country: 'Zimbabwe', flag: '🇿🇼', area: '14,651 km²', species: 'Elephants', rangers: 96, accent: '#8B5CF6' },
     { name: 'Masai Mara', country: 'Kenya', flag: '🇰🇪', area: '1,510 km²', species: 'Big Five', rangers: 67, accent: '#3B82F6' },
     { name: 'Okavango Delta', country: 'Botswana', flag: '🇧🇼', area: '15,000 km²', species: 'Diverse Megafauna', rangers: 112, accent: '#06B6D4' },
 ];
@@ -121,7 +121,7 @@ const MarketingPage: React.FC = () => {
     const crisisSection = useInView(0.3);
     const aboutSection = useInView(0.2);
     const methodSection = useInView(0.2);
-    const estatesSection = useInView(0.15);
+    const parksSection = useInView(0.15);
     const tiersSection = useInView(0.2);
     const ctaSection = useInView(0.3);
 
@@ -139,7 +139,7 @@ const MarketingPage: React.FC = () => {
                     </div>
                     <div className="hidden md:flex items-center gap-10 text-[11px] font-mono tracking-[0.2em] text-gray-400">
                         <a href="#about" className="hover:text-white transition-colors">ABOUT</a>
-                        <a href="#estates" className="hover:text-white transition-colors">ESTATES</a>
+                        <a href="#parks" className="hover:text-white transition-colors">PARKS</a>
                         <a href="#impact" className="hover:text-white transition-colors">IMPACT</a>
                         <a href="#tiers" className="hover:text-white transition-colors">DEPLOYMENT</a>
                         <a href="#contact" className="hover:text-white transition-colors">CONTACT</a>
@@ -355,40 +355,40 @@ const MarketingPage: React.FC = () => {
                 </div>
             </section>
 
-            {/* ═══ MONITORED ESTATES ═══════════════════════════════════ */}
-            <section id="estates" ref={estatesSection.ref} className="relative py-32 px-6">
+            {/* ═══ MONITORED PARKS ═══════════════════════════════════ */}
+            <section id="parks" ref={parksSection.ref} className="relative py-32 px-6">
                 <div className="max-w-6xl mx-auto">
                     <div className="flex items-center gap-3 mb-6">
                         <div className="w-10 h-px bg-vanguard-species" />
-                        <span className="text-[10px] font-mono tracking-[0.4em] text-vanguard-species uppercase">Monitored Estates</span>
+                        <span className="text-[10px] font-mono tracking-[0.4em] text-vanguard-species uppercase">Monitored Parks</span>
                     </div>
-                    <h2 className={`text-4xl md:text-5xl font-sans font-bold mb-16 transition-all duration-1000 ${estatesSection.visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
+                    <h2 className={`text-4xl md:text-5xl font-sans font-bold mb-16 transition-all duration-1000 ${parksSection.visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
                         Protected Zones Under
                         <span className="bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent"> Vanguard Watch</span>
                     </h2>
-                    <div className={`grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 transition-all duration-1000 delay-200 ${estatesSection.visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-12'}`}>
-                        {MONITORED_ESTATES.map((estate, i) => (
+                    <div className={`grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 transition-all duration-1000 delay-200 ${parksSection.visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-12'}`}>
+                        {MONITORED_PARKS.map((park, i) => (
                             <div key={i} className="group relative bg-white/[.02] border border-white/[.06] rounded-xl p-6 hover:border-white/[.12] hover:bg-white/[.04] transition-all duration-300 overflow-hidden">
                                 {/* Accent glow */}
-                                <div className="absolute top-0 right-0 w-32 h-32 rounded-full blur-3xl opacity-0 group-hover:opacity-10 transition-opacity duration-500" style={{ backgroundColor: estate.accent }} />
+                                <div className="absolute top-0 right-0 w-32 h-32 rounded-full blur-3xl opacity-0 group-hover:opacity-10 transition-opacity duration-500" style={{ backgroundColor: park.accent }} />
 
                                 <div className="flex items-start justify-between mb-4">
                                     <div>
-                                        <span className="text-lg mr-2">{estate.flag}</span>
-                                        <span className="text-[10px] font-mono text-gray-500 tracking-wider">{estate.country.toUpperCase()}</span>
+                                        <span className="text-lg mr-2">{park.flag}</span>
+                                        <span className="text-[10px] font-mono text-gray-500 tracking-wider">{park.country.toUpperCase()}</span>
                                     </div>
-                                    <div className="w-2 h-2 rounded-full animate-pulse" style={{ backgroundColor: estate.accent, boxShadow: `0 0 6px ${estate.accent}` }} />
+                                    <div className="w-2 h-2 rounded-full animate-pulse" style={{ backgroundColor: park.accent, boxShadow: `0 0 6px ${park.accent}` }} />
                                 </div>
-                                <h3 className="text-base font-bold mb-1">{estate.name}</h3>
-                                <p className="text-xs text-gray-500 mb-4">{estate.species}</p>
+                                <h3 className="text-base font-bold mb-1">{park.name}</h3>
+                                <p className="text-xs text-gray-500 mb-4">{park.species}</p>
                                 <div className="grid grid-cols-3 gap-3 pt-4 border-t border-white/[.06]">
                                     <div>
                                         <div className="text-[9px] font-mono text-gray-600 tracking-wider">AREA</div>
-                                        <div className="text-xs font-mono" style={{ color: estate.accent }}>{estate.area}</div>
+                                        <div className="text-xs font-mono" style={{ color: park.accent }}>{park.area}</div>
                                     </div>
                                     <div>
                                         <div className="text-[9px] font-mono text-gray-600 tracking-wider">RANGERS</div>
-                                        <div className="text-xs font-mono text-white/80">{estate.rangers}</div>
+                                        <div className="text-xs font-mono text-white/80">{park.rangers}</div>
                                     </div>
                                     <div>
                                         <div className="text-[9px] font-mono text-gray-600 tracking-wider">STATUS</div>
@@ -428,7 +428,7 @@ const MarketingPage: React.FC = () => {
                                     <ShieldCheck className="w-5 h-5 text-emerald-400" />
                                 </div>
                                 <div>
-                                    <div className="text-sm font-bold">National Estate Edition</div>
+                                    <div className="text-sm font-bold">National Park Edition</div>
                                     <div className="text-[10px] font-mono text-emerald-500/80 tracking-wider">GOVERNMENT LEVEL</div>
                                 </div>
                             </div>
@@ -439,7 +439,7 @@ const MarketingPage: React.FC = () => {
 
                             <div className="space-y-3">
                                 {[
-                                    'Multi-estate jurisdiction management',
+                                    'Multi-park jurisdiction management',
                                     'Ranger force GPS integration',
                                     'AI noise filtration & thermal vectoring',
                                     'Cross-border satellite handoff',

@@ -1,6 +1,6 @@
 import React, { useState, useCallback } from 'react';
 import { ShieldAlert, FileDown, Loader2, IndianRupee, AlertTriangle } from 'lucide-react';
-import { AlertEvent } from '../lib/estatesData';
+import { AlertEvent } from '../lib/parksData';
 import NarrativePanel from './NarrativePanel';
 import LegalProfileModal, { loadLegalProfile } from './LegalProfileModal';
 import { generateEvidenceReport, LegalProfile, TreeInventoryEntry } from '../services/evidenceReport';

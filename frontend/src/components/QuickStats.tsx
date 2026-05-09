@@ -1,15 +1,15 @@
 import React, { useEffect, useState } from 'react';
 import { AlertCircle, Activity, Satellite, Users, Brain } from 'lucide-react';
-import { ESTATES } from '../lib/estatesData';
+import { PARKS } from '../lib/parksData';
 import { useLiveAlerts, EnvironmentData } from '../lib/liveStream';
 
 interface QuickStatsProps {
-    estateId?: string | null;
+    parkId?: string | null;
 }
 
-const QuickStats: React.FC<QuickStatsProps> = ({ estateId }) => {
-    const estate = ESTATES.find(p => p.id === estateId);
-    const { alerts, predictiveState, environmentData: liveEnv } = useLiveAlerts(estateId);
+const QuickStats: React.FC<QuickStatsProps> = ({ parkId }) => {
+    const park = PARKS.find(p => p.id === parkId);
+    const { alerts, predictiveState, environmentData: liveEnv } = useLiveAlerts(parkId);
     const [localEnv, setLocalEnv] = useState<EnvironmentData | null>(null);
     const [eonetCount, setEonetCount] = useState<number | null>(null);
     const [gbifCount, setGbifCount] = useState<number | null>(null);
@@ -17,8 +17,8 @@ const QuickStats: React.FC<QuickStatsProps> = ({ estateId }) => {
 
     // Fetch environment once on mount if we don't have SSE data yet
     useEffect(() => {
-        if (!estate) return;
-        const [lat, lon] = estate.centerCoordinates;
+        if (!park) return;
+        const [lat, lon] = park.centerCoordinates;
         
         if (!liveEnv) {
             fetch(`/api/environment/${lat}/${lon}`)
@@ -36,7 +36,7 @@ const QuickStats: React.FC<QuickStatsProps> = ({ estateId }) => {
             .then(r => r.json())
             .then(data => setGbifCount(data.total))
             .catch(() => {});
-    }, [estateId]);
+    }, [parkId]);
 
     // Fetch assessed threats count from Supabase
     useEffect(() => {
@@ -49,7 +49,7 @@ const QuickStats: React.FC<QuickStatsProps> = ({ estateId }) => {
         });
     }, []);
 
-    if (!estate) return null;
+    if (!park) return null;
 
     const env = liveEnv || localEnv;
     const criticalAlerts = alerts.filter(a => a.priority === 'CRITICAL' || a.priority === 'HIGH').length;

@@ -2,7 +2,7 @@
  * CreateEstatePage
  * – Google Earth-style toolbar (search, undo/redo, placemark, polygon, measure)
  * – 2D Leaflet map for drawing (dark CARTO tiles)
- * – 3D Cesium globe synced to drawn polygon (same token / quality as estate dashboards)
+ * – 3D Cesium globe synced to drawn polygon (same token / quality as park dashboards)
  * – leaflet-draw loaded dynamically INSIDE useEffect after window.L is set
  */
 import { useState, useCallback, useRef, useEffect } from 'react';
@@ -634,7 +634,7 @@ export default function CreateEstatePage() {
     if (viewer.scene.skyAtmosphere) viewer.scene.skyAtmosphere.show = false;
     if (viewer.scene.fog) viewer.scene.fog.enabled = false;
 
-    // Bing satellite imagery (same as estate dashboards via Ion asset 2)
+    // Bing satellite imagery (same as park dashboards via Ion asset 2)
     IonImageryProvider.fromAssetId(2).then(provider => {
       if (!viewer.isDestroyed()) {
         viewer.imageryLayers.removeAll();

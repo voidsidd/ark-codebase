@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Activity, Play, Pause, AlertTriangle, Volume2, MapPin, Clock, Zap } from 'lucide-react';
 import Header from './components/Header';
-import { getEstateById } from './lib/estatesData';
+import { getParkById } from './lib/parksData';
 
 const GROQ_KEY = import.meta.env.VITE_GROQ_API_KEY_1 || import.meta.env.VITE_GROQ_API_KEY_2 || '';
 const GROQ_API_URL = 'https://api.groq.com/openai/v1/chat/completions';
@@ -18,7 +18,7 @@ interface SampleClip {
 
 interface AudioEvent {
     id: string;
-    estateId: string;
+    parkId: string;
     zone: string;
     timestamp: string;
     classification: string;
@@ -59,7 +59,7 @@ const threatLabelText: Record<ThreatLevel, string> = {
 const SoundAnalysisPage: React.FC = () => {
     const { id } = useParams();
     const navigate = useNavigate();
-    const estate = useMemo(() => getEstateById(id), [id]);
+    const park = useMemo(() => getParkById(id), [id]);
 
     const [selectedSample, setSelectedSample] = useState<SampleClip | null>(null);
     const [isPlaying, setIsPlaying] = useState(false);
@@ -73,14 +73,14 @@ const SoundAnalysisPage: React.FC = () => {
     useEffect(() => {
         if (!id) return;
         setLoadingEvents(true);
-        // No backend API — generate synthetic event log from ESTATES data
+        // No backend API — generate synthetic event log from PARKS data
         setTimeout(() => {
-            const estate = getEstateById(id);
+            const park = getParkById(id);
             const eventTypes = ['GUNSHOT_DETECTED', 'CHAINSAW_NOISE', 'TIGER_VOCALIZATION', 'ELEPHANT_HERD', 'AMBIENT_NORMAL'];
-            const zones = estate ? Object.keys(estate.zones) : ['Z1', 'Z2', 'Z3'];
+            const zones = park ? Object.keys(park.zones) : ['Z1', 'Z2', 'Z3'];
             const generated = Array.from({ length: 12 }, (_, i) => ({
                 id: `evt-${i}`,
-                estateId: estate?.id ?? id!,
+                parkId: park?.id ?? id!,
                 zone: zones[i % zones.length],
                 timestamp: new Date(Date.now() - i * 1800_000).toLocaleTimeString(),
                 classification: eventTypes[i % eventTypes.length].replace(/_/g, ' '),
@@ -134,12 +134,12 @@ const SoundAnalysisPage: React.FC = () => {
         setAnalysisResult(null);
         const sampleType = selectedSample?.type || 'AMBIENT';
         const sampleName = selectedSample?.name || customAudioName || 'Unknown audio';
-        const estateName = estate?.name ?? 'a national estate';
+        const parkName = park?.name ?? 'a national park';
 
         // Try Groq directly from frontend (no backend needed)
         if (GROQ_KEY) {
             try {
-                const prompt = `You are VANGUARD, a wildlife acoustic intelligence AI deployed in ${estateName}.
+                const prompt = `You are VANGUARD, a wildlife acoustic intelligence AI deployed in ${parkName}.
 An acoustic sensor recorded: "${sampleName}" (type: ${sampleType}).
 Analyze the audio type and respond ONLY with valid JSON (no markdown):
 {"label":"precise classification","confidence":0.XX,"threatLevel":"THREAT|WILDLIFE|AMBIENT","recommendedAction":"1-2 sentence tactical recommendation"}`;
@@ -179,10 +179,10 @@ Analyze the audio type and respond ONLY with valid JSON (no markdown):
     return (
         <div className="h-screen w-screen flex flex-col bg-vanguard-bg text-white overflow-hidden">
             <Header
-                onBack={() => navigate(`/estate/${id}`)}
+                onBack={() => navigate(`/park/${id}`)}
                 backLabel="← BACK"
-                estateId={id}
-                onSpeciesIntel={() => navigate(`/estate/${id}/species`)}
+                parkId={id}
+                onSpeciesIntel={() => navigate(`/park/${id}/species`)}
             />
 
             <div className="flex-1 overflow-y-auto custom-scrollbar">
@@ -192,7 +192,7 @@ Analyze the audio type and respond ONLY with valid JSON (no markdown):
                         <Activity className="w-5 h-5 text-vanguard-community" />
                         <h1 className="text-sm font-syne font-bold tracking-widest text-white uppercase">Sound Analysis</h1>
                     </div>
-                    <span className="text-[10px] font-mono text-gray-400">{estate?.name?.toUpperCase()}</span>
+                    <span className="text-[10px] font-mono text-gray-400">{park?.name?.toUpperCase()}</span>
                 </div>
 
                 <div className="p-6 grid grid-cols-1 lg:grid-cols-3 gap-6">

@@ -1,10 +1,10 @@
 import { useState, useEffect } from 'react';
-import { ESTATES, AlertEvent, EventType, PriorityLevel, resolveEstateId } from './estatesData';
+import { PARKS, AlertEvent, EventType, PriorityLevel, resolveParkId } from './parksData';
 import { getRandomPointInZone } from './zoneGenerator';
 
 let sharedAlerts: AlertEvent[] = [];
 let listeners: ((alerts: AlertEvent[]) => void)[] = [];
-let currentEstateId: string | null = null;
+let currentParkId: string | null = null;
 let eventSource: EventSource | null = null;
 
 export interface PredictiveState {
@@ -28,7 +28,7 @@ let sharedPredictiveState: PredictiveState | null = null;
 let predictiveListeners: ((state: PredictiveState | null) => void)[] = [];
 
 let sharedEnvironmentData: Record<string, EnvironmentData> = {};
-let environmentListeners: ((data: EnvironmentData | null, estateId: string) => void)[] = [];
+let environmentListeners: ((data: EnvironmentData | null, parkId: string) => void)[] = [];
 
 export function addAlert(alert: AlertEvent) {
     sharedAlerts = [alert, ...sharedAlerts].slice(0, 50);
@@ -50,7 +50,7 @@ function formatTimestamp(raw: any): string {
     }
 }
 
-function mapServerEventToAlert(data: any, estate: any): AlertEvent | null {
+function mapServerEventToAlert(data: any, park: any): AlertEvent | null {
     const payload = data.payload;
     if (!payload) return null;
 
@@ -87,10 +87,10 @@ function mapServerEventToAlert(data: any, estate: any): AlertEvent | null {
     }
 
     const zone = payload.zone || 'Z1';
-    const zonePolygon = estate?.zones?.[zone];
+    const zonePolygon = park?.zones?.[zone];
     const location: [number, number] = zonePolygon
         ? getRandomPointInZone(zonePolygon)
-        : estate?.centerCoordinates || [0, 0];
+        : park?.centerCoordinates || [0, 0];
 
     return {
         id: payload.id || `EVT-${Date.now()}`,
@@ -105,21 +105,21 @@ function mapServerEventToAlert(data: any, estate: any): AlertEvent | null {
     };
 }
 
-export function useLiveAlerts(estateId?: string | null) {
+export function useLiveAlerts(parkId?: string | null) {
     const [alerts, setAlerts] = useState<AlertEvent[]>([]);
     const [predictiveState, setPredictiveState] = useState<PredictiveState | null>(null);
     const [environmentData, setEnvironmentData] = useState<EnvironmentData | null>(null);
 
     useEffect(() => {
-        if (!estateId) {
+        if (!parkId) {
             setAlerts([]);
             return;
         }
 
-        if (currentEstateId !== estateId) {
-            currentEstateId = estateId;
-            const estate = ESTATES.find(p => p.id === resolveEstateId(estateId));
-            sharedAlerts = estate ? [...estate.mockAlerts] : [];
+        if (currentParkId !== parkId) {
+            currentParkId = parkId;
+            const park = PARKS.find(p => p.id === resolveParkId(parkId));
+            sharedAlerts = park ? [...park.mockAlerts] : [];
 
             if (eventSource) eventSource.close();
 
@@ -128,7 +128,7 @@ export function useLiveAlerts(estateId?: string | null) {
             eventSource.onmessage = (event) => {
                 try {
                     const data = JSON.parse(event.data);
-                    const currentEstate = ESTATES.find(p => p.id === currentEstateId);
+                    const currentPark = PARKS.find(p => p.id === currentParkId);
 
                     // Full system clear
                     if (data.type === 'SYSTEM_CLEAR' || data.type === 'CLEAR_FEED') {
@@ -146,10 +146,10 @@ export function useLiveAlerts(estateId?: string | null) {
                     }
 
                     if (data.type === 'ENVIRONMENT_UPDATE') {
-                        const envEstateId = data.payload?.estateId;
-                        if (envEstateId) {
-                            sharedEnvironmentData[envEstateId] = data.payload;
-                            environmentListeners.forEach(l => l(data.payload, envEstateId));
+                        const envParkId = data.payload?.parkId;
+                        if (envParkId) {
+                            sharedEnvironmentData[envParkId] = data.payload;
+                            environmentListeners.forEach(l => l(data.payload, envParkId));
                         }
                         return;
                     }
@@ -160,11 +160,11 @@ export function useLiveAlerts(estateId?: string | null) {
                         return;
                     }
 
-                    // Filter by estate
-                    const eventEstateId = data.payload?.estateId;
-                    if (eventEstateId && eventEstateId !== currentEstateId) return;
+                    // Filter by park
+                    const eventParkId = data.payload?.parkId;
+                    if (eventParkId && eventParkId !== currentParkId) return;
 
-                    const alert = mapServerEventToAlert(data, currentEstate);
+                    const alert = mapServerEventToAlert(data, currentPark);
                     if (alert) addAlert(alert);
 
                 } catch (err) {
@@ -179,12 +179,12 @@ export function useLiveAlerts(estateId?: string | null) {
 
         setAlerts([...sharedAlerts]);
         setPredictiveState(sharedPredictiveState);
-        setEnvironmentData(sharedEnvironmentData[estateId] || null);
+        setEnvironmentData(sharedEnvironmentData[parkId] || null);
 
         const listener = (newAlerts: AlertEvent[]) => setAlerts([...newAlerts]);
         const predListener = (newState: PredictiveState | null) => setPredictiveState(newState);
-        const envListener = (newData: EnvironmentData | null, envEstateId: string) => {
-            if (envEstateId === estateId) setEnvironmentData(newData);
+        const envListener = (newData: EnvironmentData | null, envParkId: string) => {
+            if (envParkId === parkId) setEnvironmentData(newData);
         };
 
         listeners.push(listener);
@@ -196,7 +196,7 @@ export function useLiveAlerts(estateId?: string | null) {
             predictiveListeners = predictiveListeners.filter(l => l !== predListener);
             environmentListeners = environmentListeners.filter(l => l !== envListener);
         };
-    }, [estateId]);
+    }, [parkId]);
 
     return { alerts, predictiveState, environmentData };
 }

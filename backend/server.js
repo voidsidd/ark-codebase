@@ -522,7 +522,7 @@ app.get('/api/gbif/:lat/:lon', async (req, res) => {
 // Returns data normalized to the Spotting interface used by SpeciesIntelPage
 // and CameraFeedsPage. Proxied server-side to avoid browser CORS issues.
 
-const ESTATE_COORDS = {
+const PARK_COORDS = {
     'nagarhole':   { lat: 11.9833, lon: 76.1167, radius: 35 },
     'corbett':     { lat: 29.5300, lon: 78.7747, radius: 45 },
     'kaziranga':   { lat: 26.5775, lon: 93.1711, radius: 30 },
@@ -535,7 +535,7 @@ const ZONES = ['Z1','Z2','Z3','Z4','Z5','Z6','Z7','Z8'];
 
 app.get('/api/inaturalist/:estateId', async (req, res) => {
     const { estateId } = req.params;
-    const coords = ESTATE_COORDS[estateId];
+    const coords = PARK_COORDS[estateId];
     if (!coords) return res.status(404).json({ error: 'Unknown estate' });
 
     try {
@@ -653,7 +653,7 @@ app.post('/api/webhooks/purge-selected', (req, res) => {
 //
 // Timings:  Acoustic   3–8 min  |  Camera   5–12 min  |  Community  8–15 min
 
-const SIM_ESTATE_IDS = ['nagarhole', 'corbett', 'kaziranga', 'sundarbans', 'maasai-mara', 'kruger'];
+const SIM_PARK_IDS = ['nagarhole', 'corbett', 'kaziranga', 'sundarbans', 'maasai-mara', 'kruger'];
 const SIM_ZONES    = ['Z1', 'Z2', 'Z3', 'Z4', 'Z5', 'Z6', 'Z7', 'Z8'];
 
 function simRandom(arr) {
@@ -674,7 +674,7 @@ function scheduleSim(minMs, maxMs, generator) {
 
 // ── Acoustic simulation (45s–90s) ──────────────────────────────────────────
 scheduleSim(45 * 1000, 90 * 1000, () => {
-    const estateId = simRandom(SIM_ESTATE_IDS);
+    const estateId = simRandom(SIM_PARK_IDS);
     const zone   = simRandom(SIM_ZONES);
     const events = [
         { subType: 'GUNSHOT',        confidence: 0.87 + Math.random() * 0.12, description: 'Acoustic sensor detected high-caliber discharge pattern in restricted sector.' },
@@ -699,7 +699,7 @@ scheduleSim(45 * 1000, 90 * 1000, () => {
 
 // ── Camera trap simulation (60s–120s) ─────────────────────────────────────
 scheduleSim(60 * 1000, 120 * 1000, () => {
-    const estateId = simRandom(SIM_ESTATE_IDS);
+    const estateId = simRandom(SIM_PARK_IDS);
     const zone   = simRandom(SIM_ZONES);
     const events = [
         { subType: 'SPECIES_DETECTED',   confidence: 0.80 + Math.random() * 0.18, description: 'Camera trap identified animal presence in patrol sector.',                                   priority: 'ELEVATED' },
@@ -724,7 +724,7 @@ scheduleSim(60 * 1000, 120 * 1000, () => {
 
 // ── Community report simulation (90s–180s) ────────────────────────────────
 scheduleSim(90 * 1000, 180 * 1000, () => {
-    const estateId = simRandom(SIM_ESTATE_IDS);
+    const estateId = simRandom(SIM_PARK_IDS);
     const zone   = simRandom(SIM_ZONES);
     const events = [
         { subType: 'SUSPICIOUS_VEHICLE', description: 'Community member reported unidentified vehicle near estate boundary.' },
@@ -751,8 +751,8 @@ scheduleSim(90 * 1000, 180 * 1000, () => {
 scheduleSim(30 * 1000, 30 * 1000, async () => {
     try {
         // Broadcast updates for a rotating estate to keep the data fresh
-        const estateId = SIM_ESTATE_IDS[Math.floor(Date.now() / 30000) % SIM_ESTATE_IDS.length];
-        const coords = ESTATE_COORDS[estateId];
+        const estateId = SIM_PARK_IDS[Math.floor(Date.now() / 30000) % SIM_PARK_IDS.length];
+        const coords = PARK_COORDS[estateId];
         if (!coords) return;
 
         const resp = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${coords.lat}&longitude=${coords.lon}&current=temperature_2m,wind_speed_10m,precipitation_probability,weather_code&timezone=auto`);

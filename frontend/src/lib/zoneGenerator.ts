@@ -32,7 +32,7 @@ export function buildZonesFromKm(centerLat: number, centerLon: number, zonesKm: 
 }
 
 // Accurately shaped zones based on the real-world maps
-export const ESTATE_SHAPES = {
+export const PARK_SHAPES = {
     // Maasai Mara (~1510 km2). Iconic shape bounded by Oloololo Escarpment (NW-SE diagonal)
     // and Tanzania border (SW-NE diagonal). Divided by Mara river.
     maasaimara: (lat: number, lon: number) => buildZonesFromKm(lat, lon, {

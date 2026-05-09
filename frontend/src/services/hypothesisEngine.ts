@@ -1,5 +1,5 @@
 import { supabase } from '../lib/supabaseClient';
-import { AlertEvent } from '../lib/estatesData';
+import { AlertEvent } from '../lib/parksData';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 export interface HypothesisResult {
