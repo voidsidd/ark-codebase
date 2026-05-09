@@ -2,7 +2,7 @@
   "nagarhole": [
     {
       "id": "ngh-a1",
-      "parkId": "nagarhole",
+      "estateId": "nagarhole",
       "zone": "Z4",
       "timestamp": "04:28:06",
       "classification": "Single Gunshot Pulse",
@@ -12,7 +12,7 @@
     },
     {
       "id": "ngh-a2",
-      "parkId": "nagarhole",
+      "estateId": "nagarhole",
       "zone": "Z2",
       "timestamp": "03:33:06",
       "classification": "Elephant Trumpet Call",
@@ -24,7 +24,7 @@
   "corbett": [
     {
       "id": "cor-a1",
-      "parkId": "corbett",
+      "estateId": "corbett",
       "zone": "Z3",
       "timestamp": "03:53:06",
       "classification": "Chainsaw-Like Harmonic Pattern",
@@ -36,7 +36,7 @@
   "kaziranga": [
     {
       "id": "kaz-a1",
-      "parkId": "kaziranga",
+      "estateId": "kaziranga",
       "zone": "Z1",
       "timestamp": "04:08:06",
       "classification": "Ambient Wetland Chorus",
@@ -48,7 +48,7 @@
   "sundarbans": [
     {
       "id": "sun-a1",
-      "parkId": "sundarbans",
+      "estateId": "sundarbans",
       "zone": "Z5",
       "timestamp": "04:38:06",
       "classification": "Boat Engine / Low RPM",
@@ -60,7 +60,7 @@
   "maasai-mara": [
     {
       "id": "mara-a1",
-      "parkId": "maasai-mara",
+      "estateId": "maasai-mara",
       "zone": "Z6",
       "timestamp": "04:03:06",
       "classification": "Lion Roar Sequence",
@@ -72,7 +72,7 @@
   "kruger": [
     {
       "id": "kru-a1",
-      "parkId": "kruger",
+      "estateId": "kruger",
       "zone": "Z7",
       "timestamp": "04:18:06",
       "classification": "Vehicle Convoy on Gravel",

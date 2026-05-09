@@ -2,14 +2,14 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Image as ImageIcon, BookOpen, Edit3, Trash2, Plus, ChevronLeft, Clock, MapPin, Save } from 'lucide-react';
 import Header from './components/Header';
-import { getParkById } from './lib/parksData';
+import { getEstateById } from './lib/estatesData';
 
 const GEMINI_KEY = import.meta.env.VITE_GEMINI_API_KEY || '';
 const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-8b:generateContent?key=${GEMINI_KEY}`;
 
 interface FaunaEntry {
     id: string;
-    parkId: string;
+    estateId: string;
     commonName: string;
     scientificName: string;
     estimatedCount: number;
@@ -20,7 +20,7 @@ interface FaunaEntry {
 
 interface Spotting {
     id: string;
-    parkId: string;
+    estateId: string;
     speciesCommonName: string;
     scientificName?: string;
     zone: string;
@@ -45,7 +45,7 @@ interface VisionResult {
 const SpeciesIntelPage: React.FC = () => {
     const { id } = useParams();
     const navigate = useNavigate();
-    const park = useMemo(() => getParkById(id), [id]);
+    const estate = useMemo(() => getEstateById(id), [id]);
 
     const [fauna, setFauna] = useState<FaunaEntry[]>([]);
     const [spottings, setSpottings] = useState<Spotting[]>([]);
@@ -82,34 +82,34 @@ const SpeciesIntelPage: React.FC = () => {
     useEffect(() => {
         if (!id) return;
 
-        // Build fauna catalog from park data; fall back to a curated set for known Indian parks
+        // Build fauna catalog from estate data; fall back to a curated set for known Indian estates
         setLoadingFauna(true);
         const knownFauna: Record<string, FaunaEntry[]> = {
             nagarhole: [
-                { id: 'ng1', parkId: id, commonName: 'Bengal Tiger', scientificName: 'Panthera tigris', estimatedCount: 130, status: 'Endangered', notes: 'Core breeding population in Nagarhole.', citation: 'WII Census 2023' },
-                { id: 'ng2', parkId: id, commonName: 'Indian Elephant', scientificName: 'Elephas maximus', estimatedCount: 600, status: 'Endangered', notes: 'Largest elephant population in the region.', citation: 'MOEF 2022' },
-                { id: 'ng3', parkId: id, commonName: 'Indian Leopard', scientificName: 'Panthera pardus fusca', estimatedCount: 95, status: 'Vulnerable', notes: 'High density in buffer zones.', citation: 'WII 2023' },
-                { id: 'ng4', parkId: id, commonName: 'Dhole', scientificName: 'Cuon alpinus', estimatedCount: 80, status: 'Endangered', notes: 'Active pack territories in western range.', citation: 'BNHS' },
-                { id: 'ng5', parkId: id, commonName: 'Gaur', scientificName: 'Bos gaurus', estimatedCount: 1200, status: 'Vulnerable', notes: 'Largest ungulate population.', citation: 'Forest Survey 2023' },
+                { id: 'ng1', estateId: id, commonName: 'Bengal Tiger', scientificName: 'Panthera tigris', estimatedCount: 130, status: 'Endangered', notes: 'Core breeding population in Nagarhole.', citation: 'WII Census 2023' },
+                { id: 'ng2', estateId: id, commonName: 'Indian Elephant', scientificName: 'Elephas maximus', estimatedCount: 600, status: 'Endangered', notes: 'Largest elephant population in the region.', citation: 'MOEF 2022' },
+                { id: 'ng3', estateId: id, commonName: 'Indian Leopard', scientificName: 'Panthera pardus fusca', estimatedCount: 95, status: 'Vulnerable', notes: 'High density in buffer zones.', citation: 'WII 2023' },
+                { id: 'ng4', estateId: id, commonName: 'Dhole', scientificName: 'Cuon alpinus', estimatedCount: 80, status: 'Endangered', notes: 'Active pack territories in western range.', citation: 'BNHS' },
+                { id: 'ng5', estateId: id, commonName: 'Gaur', scientificName: 'Bos gaurus', estimatedCount: 1200, status: 'Vulnerable', notes: 'Largest ungulate population.', citation: 'Forest Survey 2023' },
             ],
             kanha: [
-                { id: 'kn1', parkId: id, commonName: 'Bengal Tiger', scientificName: 'Panthera tigris', estimatedCount: 105, status: 'Endangered', notes: 'Kanha has been a tiger reintroduction success.', citation: 'NTCA 2023' },
-                { id: 'kn2', parkId: id, commonName: 'Barasingha', scientificName: 'Rucervus duvaucelii', estimatedCount: 650, status: 'Vulnerable', notes: 'Kanha is last stronghold of this deer.', citation: 'WII 2022' },
-                { id: 'kn3', parkId: id, commonName: 'Indian Leopard', scientificName: 'Panthera pardus fusca', estimatedCount: 50, status: 'Vulnerable', notes: 'Avoid direct tiger habitat overlap.', citation: 'WII 2023' },
-                { id: 'kn4', parkId: id, commonName: 'Sloth Bear', scientificName: 'Melursus ursinus', estimatedCount: 80, status: 'Vulnerable', notes: 'Termite-rich meadow zones.', citation: 'BNHS 2022' },
+                { id: 'kn1', estateId: id, commonName: 'Bengal Tiger', scientificName: 'Panthera tigris', estimatedCount: 105, status: 'Endangered', notes: 'Kanha has been a tiger reintroduction success.', citation: 'NTCA 2023' },
+                { id: 'kn2', estateId: id, commonName: 'Barasingha', scientificName: 'Rucervus duvaucelii', estimatedCount: 650, status: 'Vulnerable', notes: 'Kanha is last stronghold of this deer.', citation: 'WII 2022' },
+                { id: 'kn3', estateId: id, commonName: 'Indian Leopard', scientificName: 'Panthera pardus fusca', estimatedCount: 50, status: 'Vulnerable', notes: 'Avoid direct tiger habitat overlap.', citation: 'WII 2023' },
+                { id: 'kn4', estateId: id, commonName: 'Sloth Bear', scientificName: 'Melursus ursinus', estimatedCount: 80, status: 'Vulnerable', notes: 'Termite-rich meadow zones.', citation: 'BNHS 2022' },
             ],
             kaziranga: [
-                { id: 'kz1', parkId: id, commonName: 'Indian One-Horned Rhinoceros', scientificName: 'Rhinoceros unicornis', estimatedCount: 2613, status: 'Vulnerable', notes: 'Largest rhino population globally.', citation: 'WWF 2023' },
-                { id: 'kz2', parkId: id, commonName: 'Bengal Tiger', scientificName: 'Panthera tigris', estimatedCount: 121, status: 'Endangered', notes: 'Highest tiger density in India.', citation: 'NTCA 2023' },
-                { id: 'kz3', parkId: id, commonName: 'Asian Elephant', scientificName: 'Elephas maximus', estimatedCount: 1100, status: 'Endangered', notes: '', citation: 'MOEF 2022' },
-                { id: 'kz4', parkId: id, commonName: 'Wild Water Buffalo', scientificName: 'Bubalus arnee', estimatedCount: 1666, status: 'Endangered', notes: 'Key genetic reservoir.', citation: 'WII 2023' },
+                { id: 'kz1', estateId: id, commonName: 'Indian One-Horned Rhinoceros', scientificName: 'Rhinoceros unicornis', estimatedCount: 2613, status: 'Vulnerable', notes: 'Largest rhino population globally.', citation: 'WWF 2023' },
+                { id: 'kz2', estateId: id, commonName: 'Bengal Tiger', scientificName: 'Panthera tigris', estimatedCount: 121, status: 'Endangered', notes: 'Highest tiger density in India.', citation: 'NTCA 2023' },
+                { id: 'kz3', estateId: id, commonName: 'Asian Elephant', scientificName: 'Elephas maximus', estimatedCount: 1100, status: 'Endangered', notes: '', citation: 'MOEF 2022' },
+                { id: 'kz4', estateId: id, commonName: 'Wild Water Buffalo', scientificName: 'Bubalus arnee', estimatedCount: 1666, status: 'Endangered', notes: 'Key genetic reservoir.', citation: 'WII 2023' },
             ],
         };
 
-        const shortId = park?.id ?? id!;
+        const shortId = estate?.id ?? id!;
         const entries = knownFauna[shortId] ?? [
-            { id: 'gen1', parkId: id, commonName: 'Bengal Tiger', scientificName: 'Panthera tigris', estimatedCount: 50, status: 'Endangered', notes: 'Population estimate from census data.', citation: 'NTCA 2023' },
-            { id: 'gen2', parkId: id, commonName: 'Indian Leopard', scientificName: 'Panthera pardus fusca', estimatedCount: 30, status: 'Vulnerable', notes: '', citation: 'WII 2022' },
+            { id: 'gen1', estateId: id, commonName: 'Bengal Tiger', scientificName: 'Panthera tigris', estimatedCount: 50, status: 'Endangered', notes: 'Population estimate from census data.', citation: 'NTCA 2023' },
+            { id: 'gen2', estateId: id, commonName: 'Indian Leopard', scientificName: 'Panthera pardus fusca', estimatedCount: 30, status: 'Vulnerable', notes: '', citation: 'WII 2022' },
         ];
 
         setFauna(entries);
@@ -117,16 +117,16 @@ const SpeciesIntelPage: React.FC = () => {
         // Fetch Wikipedia thumbnails for every species
         entries.forEach(entry => { if (entry.scientificName) fetchWikiImage(entry.scientificName); });
 
-        // iNaturalist direct API: research-grade observations near park name
+        // iNaturalist direct API: research-grade observations near estate name
         setLoadingSpottings(true);
-        const searchPlace = park?.name?.split(' ')[0] ?? 'Nagarhole';
+        const searchPlace = estate?.name?.split(' ')[0] ?? 'Nagarhole';
         fetch(`https://api.inaturalist.org/v1/observations?quality_grade=research&photos=true&taxon_name=Mammalia&place_guess=${encodeURIComponent(searchPlace)}&per_page=15&order=desc&order_by=created_at`)
             .then(r => r.ok ? r.json() : Promise.reject())
             .then(data => {
                 const results = (data?.results ?? []) as any[];
                 const mapped: Spotting[] = results.map((obs: any) => ({
                     id: String(obs.id),
-                    parkId: id!,
+                    estateId: id!,
                     speciesCommonName: obs.taxon?.preferred_common_name || obs.taxon?.name || 'Unknown Species',
                     scientificName: obs.taxon?.name,
                     zone: 'iNaturalist',
@@ -141,7 +141,7 @@ const SpeciesIntelPage: React.FC = () => {
             })
             .catch(() => setSpottings([]))
             .finally(() => setLoadingSpottings(false));
-    }, [id, park]);
+    }, [id, estate]);
 
     const handleEdit = (entry: FaunaEntry) => {
         setEditingEntry(entry);
@@ -152,7 +152,7 @@ const SpeciesIntelPage: React.FC = () => {
         if (!id) return;
         setEditingEntry({
             id: 'NEW',
-            parkId: id,
+            estateId: id,
             commonName: '',
             scientificName: '',
             estimatedCount: 0,
@@ -164,7 +164,7 @@ const SpeciesIntelPage: React.FC = () => {
     };
 
     const handleDelete = (entry: FaunaEntry) => {
-        if (!window.confirm(`Remove ${entry.commonName} from ${park?.name}?`)) return;
+        if (!window.confirm(`Remove ${entry.commonName} from ${estate?.name}?`)) return;
         setFauna(prev => prev.filter(f => f.id !== entry.id));
     };
 
@@ -174,7 +174,7 @@ const SpeciesIntelPage: React.FC = () => {
         setSavingFauna(true);
         const payload: FaunaEntry = {
             id: isNewEntry ? `local-${Date.now()}` : editingEntry.id,
-            parkId: id,
+            estateId: id,
             commonName: editingEntry.commonName,
             scientificName: editingEntry.scientificName,
             estimatedCount: Number(editingEntry.estimatedCount) || 0,
@@ -273,7 +273,7 @@ Respond ONLY with JSON (no markdown):
         setUploading(false);
     };
 
-    if (!id || !park) {
+    if (!id || !estate) {
         return (
             <div className="h-screen w-screen flex items-center justify-center bg-vanguard-bg text-white">
                 <button
@@ -281,7 +281,7 @@ Respond ONLY with JSON (no markdown):
                     className="flex items-center gap-2 px-4 py-2 border border-vanguard-border rounded bg-vanguard-panel hover:bg-gray-900 text-xs font-mono"
                 >
                     <ChevronLeft className="w-4 h-4" />
-                    RETURN TO PARK SELECTION
+                    RETURN TO ESTATE SELECTION
                 </button>
             </div>
         );
@@ -290,9 +290,9 @@ Respond ONLY with JSON (no markdown):
     return (
         <div className="h-screen w-screen flex flex-col bg-vanguard-bg text-white overflow-hidden">
             <Header
-                onBack={() => navigate(`/park/${id}`)}
+                onBack={() => navigate(`/estate/${id}`)}
                 backLabel="← BACK"
-                parkId={id}
+                estateId={id}
                 onSpeciesIntel={() => {}}
             />
 
@@ -305,7 +305,7 @@ Respond ONLY with JSON (no markdown):
                                 Species Intelligence
                             </div>
                             <div className="text-sm font-syne text-gray-300">
-                                Computer vision, field catalog, and 24h spottings for {park.name}
+                                Computer vision, field catalog, and 24h spottings for {estate.name}
                             </div>
                         </div>
                     </div>
@@ -337,7 +337,7 @@ Respond ONLY with JSON (no markdown):
                         <div className="flex-1 overflow-y-auto custom-scrollbar divide-y divide-vanguard-border/60">
                             {spottings.length === 0 && !loadingSpottings && (
                                 <div className="p-4 text-[11px] font-mono text-gray-500">
-                                    No spottings in the last 24 hours for this park. Vanguard will surface new events
+                                    No spottings in the last 24 hours for this estate. Vanguard will surface new events
                                     as they are ingested.
                                 </div>
                             )}
@@ -424,12 +424,12 @@ Respond ONLY with JSON (no markdown):
                         <div className="flex-1 overflow-y-auto custom-scrollbar divide-y divide-vanguard-border/60">
                             {loadingFauna && (
                                 <div className="p-4 text-[11px] font-mono text-gray-500">
-                                    Loading catalog for {park.name}…
+                                    Loading catalog for {estate.name}…
                                 </div>
                             )}
                             {!loadingFauna && fauna.length === 0 && (
                                 <div className="p-4 text-[11px] font-mono text-gray-500">
-                                    No catalog entries yet. Use NEW ENTRY to seed the local fauna profile for this park.
+                                    No catalog entries yet. Use NEW ENTRY to seed the local fauna profile for this estate.
                                 </div>
                             )}
                             {fauna

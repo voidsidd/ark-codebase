@@ -112,10 +112,10 @@ const DashboardView = () => {
         <div className="h-screen w-screen flex flex-col bg-vanguard-bg text-white overflow-hidden">
             <Header
                 onBack={() => navigate('/dashboard')}
-                parkId={isEstate ? (estateBoundary?.name ?? 'Estate') : id}
+                estateId={isEstate ? (estateBoundary?.name ?? 'Estate') : id}
                 onSpeciesIntel={() => {
                     if (isEstate) navigate(`/estate/${id}/species`);
-                    else navigate(`/park/${id}/species`);
+                    else navigate(`/estate/${id}/species`);
                 }}
             />
 
@@ -148,9 +148,9 @@ const DashboardView = () => {
                     </div>
 
                     {viewMode === '2d' ? (
-                        <MapPanel parkId={isEstate ? null : id} estateBoundary={isEstate ? estateBoundary : null} />
+                        <MapPanel estateId={isEstate ? null : id} estateBoundary={isEstate ? estateBoundary : null} />
                     ) : (
-                        <ZoneManager parkId={isEstate ? null : id} estateBoundary={isEstate ? estateBoundary : null} />
+                        <ZoneManager estateId={isEstate ? null : id} estateBoundary={isEstate ? estateBoundary : null} />
                     )}
 
                     <div className="absolute bottom-6 left-6 z-[1000]">
@@ -190,17 +190,17 @@ const DashboardView = () => {
                 >
                     <div className="flex flex-col min-h-max min-w-[320px]">
                         <div className="border-b border-vanguard-border">
-                            <AlertFeed parkId={isEstate ? null : id} isEstate={isEstate} estateId={isEstate ? id : undefined} />
+                            <AlertFeed estateId={isEstate ? null : id} isEstate={isEstate} estateId={isEstate ? id : undefined} />
                         </div>
                         <div className="border-b border-vanguard-border">
-                            <ZoneStatus parkId={id} />
+                            <ZoneStatus estateId={id} />
                         </div>
                         <div className="bg-vanguard-bg border-t border-vanguard-border flex flex-col">
                             <div className="p-3 border-b border-vanguard-border shrink-0">
-                                <EnvironmentPanel parkId={id} />
+                                <EnvironmentPanel estateId={id} />
                             </div>
                             <div className="flex-1">
-                                <QuickStats parkId={id} />
+                                <QuickStats estateId={id} />
                             </div>
                             {isGovernment && <WildlifeTrackerPanel />}
                         </div>
@@ -209,7 +209,7 @@ const DashboardView = () => {
             </div>
 
             {communityModalOpen && (
-                <CommunityReportModal parkId={id} onClose={() => setCommunityModalOpen(false)} />
+                <CommunityReportModal estateId={id} onClose={() => setCommunityModalOpen(false)} />
             )}
         </div>
     );
@@ -233,22 +233,22 @@ function App() {
                 <Route path="/dashboard" element={
                     <RequireAuth><DashboardPage /></RequireAuth>
                 } />
-                <Route path="/park/:id" element={
+                <Route path="/estate/:id" element={
                     <RequireAuth><DashboardView /></RequireAuth>
                 } />
-                <Route path="/park/:id/species" element={
+                <Route path="/estate/:id/species" element={
                     <RequireAuth><SpeciesIntelPage /></RequireAuth>
                 } />
                 <Route path="/estate/:id/species" element={
                     <RequireAuth><EstateIntelPage /></RequireAuth>
                 } />
-                <Route path="/park/:id/cameras" element={
+                <Route path="/estate/:id/cameras" element={
                     <RequireAuth><CameraFeedsPage /></RequireAuth>
                 } />
-                <Route path="/park/:id/sound" element={
+                <Route path="/estate/:id/sound" element={
                     <RequireAuth><SoundAnalysisPage /></RequireAuth>
                 } />
-                <Route path="/remote" element={
+                <Route path="/remote/:token" element={
                     <RequireAuth><RemoteController /></RequireAuth>
                 } />
                 <Route path="/estate/new" element={

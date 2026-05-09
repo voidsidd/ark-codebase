@@ -118,7 +118,7 @@ const AuthLoadingScreen: React.FC<AuthLoadingScreenProps> = ({
             </defs>
           </svg>
 
-          {/* Centre spark */}
+          {/* Centre sestate */}
           <div
             style={{
               position: 'absolute',

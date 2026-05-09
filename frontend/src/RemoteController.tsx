@@ -4,19 +4,19 @@ import {
     Scissors, Truck, Biohazard, Eye, ListX, ChevronDown, ChevronUp,
     Radio, Camera, Brain, Download, Loader2, AlertTriangle,
 } from 'lucide-react';
-import { PARKS, PARK_UUID_MAP } from './lib/parksData';
+import { ESTATES, ESTATE_UUID_MAP } from './lib/estatesData';
 import { supabase } from './lib/supabaseClient';
 
 // ── UUID map inverted so we can insert with the Supabase UUID ─────────────────
 const SHORT_TO_UUID: Record<string, string> = Object.fromEntries(
-    Object.entries(PARK_UUID_MAP).map(([uuid, short]) => [short, uuid])
+    Object.entries(ESTATE_UUID_MAP).map(([uuid, short]) => [short, uuid])
 );
 
 const GROQ_API_URL = 'https://api.groq.com/openai/v1/chat/completions';
 const GROQ_KEY = import.meta.env.VITE_GROQ_API_KEY_1 || import.meta.env.VITE_GROQ_API_KEY_2 || '';
 
 interface TriggeredAlert {
-    parkId: string;
+    estateId: string;
     zone: string;
     type: string;
     subType: string;
@@ -33,7 +33,7 @@ interface IntelBrief {
 
 interface LiveAlert {
     id: string;
-    parkId: string;
+    estateId: string;
     zone: string;
     type: string;
     subType: string;
@@ -103,7 +103,7 @@ function printPDF(a: TriggeredAlert, b: IntelBrief) {
 }
 
 const RemoteController: React.FC = () => {
-    const [selectedPark, setSelectedPark] = useState(PARKS[0].id);
+    const [selectedEstate, setSelectedEstate] = useState(ESTATES[0].id);
     const [selectedZone, setSelectedZone] = useState('Z3');
     const [status, setStatus] = useState<{ type: 'success' | 'error' | null, message: string }>({ type: null, message: '' });
     const [liveAlerts, setLiveAlerts] = useState<LiveAlert[]>([]);
@@ -131,15 +131,15 @@ const RemoteController: React.FC = () => {
         setIntelError(null);
         setShowIntel(false);
 
-        // 1. Try Supabase direct insert (government parks have UUIDs)
-        const parkUUID = SHORT_TO_UUID[payload.parkId];
+        // 1. Try Supabase direct insert (government estates have UUIDs)
+        const estateUUID = SHORT_TO_UUID[payload.estateId];
         let supabaseOk = false;
 
-        if (parkUUID) {
+        if (estateUUID) {
             const { error } = await supabase
                 .from('alerts')
                 .insert([{
-                    park_id: parkUUID,
+                    estate_id: estateUUID,
                     zone_id: payload.zone,
                     type: payload.type,
                     sub_type: payload.subType,
@@ -191,7 +191,7 @@ const RemoteController: React.FC = () => {
     const fetchAlerts = async () => {
         setLoadingAlerts(true);
         try {
-            const res = await fetch(`/api/alerts?parkId=${selectedPark}`);
+            const res = await fetch(`/api/alerts?estateId=${selectedEstate}`);
             const data = await res.json();
             setLiveAlerts(data.alerts || []);
             setSelectedAlertIds(new Set());
@@ -204,7 +204,7 @@ const RemoteController: React.FC = () => {
 
     useEffect(() => {
         if (selectivePurgeOpen) fetchAlerts();
-    }, [selectivePurgeOpen, selectedPark]);
+    }, [selectivePurgeOpen, selectedEstate]);
 
     const toggleAlertSelection = (id: string) => {
         setSelectedAlertIds(prev => {
@@ -231,7 +231,7 @@ const RemoteController: React.FC = () => {
             const res = await fetch('/api/webhooks/purge-selected', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ ids: Array.from(selectedAlertIds), parkId: selectedPark })
+                body: JSON.stringify({ ids: Array.from(selectedAlertIds), estateId: selectedEstate })
             });
             if (res.ok) {
                 setStatus({ type: 'success', message: `${selectedAlertIds.size} ALERT(S) PURGED` });
@@ -263,25 +263,25 @@ const RemoteController: React.FC = () => {
         }
     };
 
-    const park = PARKS.find(p => p.id === selectedPark);
-    const zones = park ? Object.keys(park.zones) : ['Z1','Z2','Z3','Z4','Z5','Z6','Z7','Z8'];
+    const estate = ESTATES.find(p => p.id === selectedEstate);
+    const zones = estate ? Object.keys(estate.zones) : ['Z1','Z2','Z3','Z4','Z5','Z6','Z7','Z8'];
 
     const acousticButtons = [
-        { label: 'GUNSHOT',  color: 'red',    icon: <Zap size={22} />,      payload: { parkId: selectedPark, zone: selectedZone, type: 'ACOUSTIC', subType: 'GUNSHOT',        confidence: 0.95, description: 'High-caliber rifle discharge detected in sector.' } },
-        { label: 'CHAINSAW', color: 'orange', icon: <Scissors size={22} />, payload: { parkId: selectedPark, zone: selectedZone, type: 'ACOUSTIC', subType: 'CHAINSAW',       confidence: 0.92, description: 'Motorized cutting signature — possible illegal logging.' } },
-        { label: 'VEHICLE',  color: 'orange', icon: <Truck size={22} />,    payload: { parkId: selectedPark, zone: selectedZone, type: 'ACOUSTIC', subType: 'VEHICLE_ENGINE', confidence: 0.87, description: 'Unscheduled vehicle engine detected in restricted zone.' } },
+        { label: 'GUNSHOT',  color: 'red',    icon: <Zap size={22} />,      payload: { estateId: selectedEstate, zone: selectedZone, type: 'ACOUSTIC', subType: 'GUNSHOT',        confidence: 0.95, description: 'High-caliber rifle discharge detected in sector.' } },
+        { label: 'CHAINSAW', color: 'orange', icon: <Scissors size={22} />, payload: { estateId: selectedEstate, zone: selectedZone, type: 'ACOUSTIC', subType: 'CHAINSAW',       confidence: 0.92, description: 'Motorized cutting signature — possible illegal logging.' } },
+        { label: 'VEHICLE',  color: 'orange', icon: <Truck size={22} />,    payload: { estateId: selectedEstate, zone: selectedZone, type: 'ACOUSTIC', subType: 'VEHICLE_ENGINE', confidence: 0.87, description: 'Unscheduled vehicle engine detected in restricted zone.' } },
     ];
 
     const visionButtons = [
-        { label: 'HUMAN',   color: 'amber', icon: <ShieldAlert size={22} />, payload: { parkId: selectedPark, zone: selectedZone, type: 'CAMERA', subType: 'HUMAN_PRESENCE',     confidence: 0.88, description: 'Unauthorized individual detected by camera trap.' } },
-        { label: 'VEHICLE', color: 'amber', icon: <MapPin size={22} />,      payload: { parkId: selectedPark, zone: selectedZone, type: 'CAMERA', subType: 'VEHICLE_DETECTED',   confidence: 0.85, description: 'Suspicious motor vehicle detected on camera.' } },
-        { label: 'ANOMALY', color: 'amber', icon: <Eye size={22} />,         payload: { parkId: selectedPark, zone: selectedZone, type: 'CAMERA', subType: 'BEHAVIORAL_ANOMALY', confidence: 0.82, description: 'Unusual animal behavioral pattern — possible stress or injury.' } },
+        { label: 'HUMAN',   color: 'amber', icon: <ShieldAlert size={22} />, payload: { estateId: selectedEstate, zone: selectedZone, type: 'CAMERA', subType: 'HUMAN_PRESENCE',     confidence: 0.88, description: 'Unauthorized individual detected by camera trap.' } },
+        { label: 'VEHICLE', color: 'amber', icon: <MapPin size={22} />,      payload: { estateId: selectedEstate, zone: selectedZone, type: 'CAMERA', subType: 'VEHICLE_DETECTED',   confidence: 0.85, description: 'Suspicious motor vehicle detected on camera.' } },
+        { label: 'ANOMALY', color: 'amber', icon: <Eye size={22} />,         payload: { estateId: selectedEstate, zone: selectedZone, type: 'CAMERA', subType: 'BEHAVIORAL_ANOMALY', confidence: 0.82, description: 'Unusual animal behavioral pattern — possible stress or injury.' } },
     ];
 
     const communityButtons = [
-        { label: 'SNARE LINE',  color: 'teal', icon: <Users size={22} />,        payload: { parkId: selectedPark, zone: selectedZone, type: 'COMMUNITY', subType: 'SNARE_DETECTED', confidence: 0.78, description: 'Active wire snare line reported by community member.' } },
-        { label: 'CAMP FOUND',  color: 'teal', icon: <CheckCircle2 size={22} />, payload: { parkId: selectedPark, zone: selectedZone, type: 'COMMUNITY', subType: 'POACHER_CAMP',  confidence: 0.80, description: 'Evidence of recent illegal encampment discovered.' } },
-        { label: 'DEAD ANIMAL', color: 'teal', icon: <Biohazard size={22} />,    payload: { parkId: selectedPark, zone: selectedZone, type: 'COMMUNITY', subType: 'DEAD_ANIMAL',   confidence: 0.72, description: 'Dead wildlife reported — possible poaching or disease.' } },
+        { label: 'SNARE LINE',  color: 'teal', icon: <Users size={22} />,        payload: { estateId: selectedEstate, zone: selectedZone, type: 'COMMUNITY', subType: 'SNARE_DETECTED', confidence: 0.78, description: 'Active wire snare line reported by community member.' } },
+        { label: 'CAMP FOUND',  color: 'teal', icon: <CheckCircle2 size={22} />, payload: { estateId: selectedEstate, zone: selectedZone, type: 'COMMUNITY', subType: 'POACHER_CAMP',  confidence: 0.80, description: 'Evidence of recent illegal encampment discovered.' } },
+        { label: 'DEAD ANIMAL', color: 'teal', icon: <Biohazard size={22} />,    payload: { estateId: selectedEstate, zone: selectedZone, type: 'COMMUNITY', subType: 'DEAD_ANIMAL',   confidence: 0.72, description: 'Dead wildlife reported — possible poaching or disease.' } },
     ];
 
     const colorMap: Record<string, { border: string, bg: string, text: string }> = {
@@ -335,14 +335,14 @@ const RemoteController: React.FC = () => {
                 </div>
             </div>
 
-            {/* Park Selector */}
+            {/* Estate Selector */}
             <div className="mb-4">
                 <label className="block text-[10px] font-mono text-gray-500 mb-2 tracking-widest font-bold">TARGET BATTLEGROUND</label>
                 <div className="flex gap-2 overflow-x-auto pb-2 no-scrollbar">
-                    {PARKS.map(p => (
-                        <button key={p.id} onClick={() => { triggerHaptic(20); setSelectedPark(p.id); }}
+                    {ESTATES.map(p => (
+                        <button key={p.id} onClick={() => { triggerHaptic(20); setSelectedEstate(p.id); }}
                             className={`whitespace-nowrap px-3 py-2 rounded text-[10px] font-mono font-bold transition-all border ${
-                                selectedPark === p.id
+                                selectedEstate === p.id
                                     ? 'bg-vanguard-primary/20 border-vanguard-primary text-vanguard-primary shadow-[0_0_15px_rgba(37,244,238,0.2)]'
                                     : 'bg-white/5 border-white/10 text-gray-500'
                             }`}>
@@ -413,7 +413,7 @@ const RemoteController: React.FC = () => {
                             <span className="text-[9px] font-mono bg-white/5 border border-white/10 text-gray-400 px-2 py-1 rounded">{lastTriggered.type}</span>
                             <span className="text-[9px] font-mono bg-white/5 border border-white/10 text-gray-400 px-2 py-1 rounded">{lastTriggered.subType.replace(/_/g,' ')}</span>
                             <span className="text-[9px] font-mono bg-white/5 border border-white/10 text-gray-400 px-2 py-1 rounded">ZONE {lastTriggered.zone}</span>
-                            <span className="text-[9px] font-mono bg-white/5 border border-white/10 text-gray-400 px-2 py-1 rounded">{park?.name}</span>
+                            <span className="text-[9px] font-mono bg-white/5 border border-white/10 text-gray-400 px-2 py-1 rounded">{estate?.name}</span>
                         </div>
 
                         {intelLoading && (
@@ -482,7 +482,7 @@ const RemoteController: React.FC = () => {
                 {selectivePurgeOpen && (
                     <div className="p-3 bg-[#080D18] border-t border-white/10">
                         <div className="text-[9px] font-mono text-gray-500 mb-3 tracking-widest">
-                            SHOWING ALERTS FOR: <span className="text-orange-400">{park?.name?.toUpperCase()}</span>
+                            SHOWING ALERTS FOR: <span className="text-orange-400">{estate?.name?.toUpperCase()}</span>
                         </div>
                         <div className="flex items-center justify-between mb-3 gap-2">
                             <button onClick={toggleSelectAll} className="text-[10px] font-mono text-gray-400 border border-white/10 px-3 py-1.5 rounded hover:bg-white/10 transition-colors">
@@ -505,7 +505,7 @@ const RemoteController: React.FC = () => {
                         </div>
                         <div className="max-h-64 overflow-y-auto space-y-1.5 no-scrollbar">
                             {loadingAlerts && <div className="text-[10px] font-mono text-gray-500 text-center py-4">LOADING ALERTS…</div>}
-                            {!loadingAlerts && liveAlerts.length === 0 && <div className="text-[10px] font-mono text-gray-600 text-center py-4">NO ACTIVE ALERTS FOR THIS PARK</div>}
+                            {!loadingAlerts && liveAlerts.length === 0 && <div className="text-[10px] font-mono text-gray-600 text-center py-4">NO ACTIVE ALERTS FOR THIS ESTATE</div>}
                             {!loadingAlerts && liveAlerts.map(alert => {
                                 const isSelected = selectedAlertIds.has(alert.id);
                                 return (

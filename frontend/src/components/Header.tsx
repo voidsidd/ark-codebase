@@ -2,16 +2,16 @@ import React, { useState, useEffect } from 'react';
 import { format } from 'date-fns';
 import { Shield, Activity, Fingerprint, ArrowLeft } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { getParkById } from '../lib/parksData';
+import { getEstateById } from '../lib/estatesData';
 
 interface HeaderProps {
     onBack?: () => void;
-    parkId?: string | null;
+    estateId?: string | null;
     onSpeciesIntel?: () => void;
     backLabel?: string;
 }
 
-const Header: React.FC<HeaderProps> = ({ onBack, parkId, onSpeciesIntel, backLabel = 'CHANGE PARK' }) => {
+const Header: React.FC<HeaderProps> = ({ onBack, estateId, onSpeciesIntel, backLabel = 'CHANGE ESTATE' }) => {
     const [currentTime, setCurrentTime] = useState(new Date());
     const navigate = useNavigate();
 
@@ -20,10 +20,10 @@ const Header: React.FC<HeaderProps> = ({ onBack, parkId, onSpeciesIntel, backLab
         return () => clearInterval(timer);
     }, []);
 
-    const resolvedPark = parkId ? getParkById(parkId) : undefined;
-    const parkDisplay = resolvedPark
-        ? resolvedPark.name
-        : (parkId ? parkId.replace(/-/g, ' ').toUpperCase() : 'NAGARHOLE NATIONAL PARK');
+    const resolvedEstate = estateId ? getEstateById(estateId) : undefined;
+    const estateDisplay = resolvedEstate
+        ? resolvedEstate.name
+        : (estateId ? estateId.replace(/-/g, ' ').toUpperCase() : 'NAGARHOLE ESTATE');
 
     return (
         <header className="h-16 shrink-0 z-50 relative"
@@ -57,7 +57,7 @@ const Header: React.FC<HeaderProps> = ({ onBack, parkId, onSpeciesIntel, backLab
                 {/* CENTER */}
                 <div className="flex flex-col items-center justify-center shrink-0 px-4">
                     <h2 className="text-[13px] font-syne font-bold tracking-[0.22em] text-gray-100 uppercase whitespace-nowrap">
-                        {parkDisplay.toUpperCase()}
+                        {estateDisplay.toUpperCase()}
                     </h2>
                     <span className="text-[9px] text-vanguard-camera font-mono tracking-[0.3em] mt-0.5 opacity-75 whitespace-nowrap">
                         ◈ PROTECTED AREA
@@ -66,19 +66,19 @@ const Header: React.FC<HeaderProps> = ({ onBack, parkId, onSpeciesIntel, backLab
 
                 {/* RIGHT */}
                 <div className="flex items-center justify-end gap-3 min-w-0 overflow-hidden pr-2">
-                    <button onClick={() => parkId && navigate(`/park/${parkId}/cameras`)}
+                    <button onClick={() => estateId && navigate(`/estate/${estateId}/cameras`)}
                         title="Camera Feeds"
                         className="flex items-center gap-2 px-3.5 py-2 text-[11px] font-mono font-bold bg-vanguard-panel border border-vanguard-border rounded hover:border-vanguard-species/50 hover:text-vanguard-species transition-all shrink-0">
                         <Fingerprint className="w-4 h-4 text-vanguard-species" />
                         <span className="hidden xl:inline tracking-wider">CAMERA</span>
                     </button>
-                    <button onClick={onSpeciesIntel ?? (() => parkId && navigate(`/park/${parkId}/species`))}
+                    <button onClick={onSpeciesIntel ?? (() => estateId && navigate(`/estate/${estateId}/species`))}
                         title="Species ID"
                         className="flex items-center gap-2 px-3.5 py-2 text-[11px] font-mono font-bold bg-vanguard-panel border border-vanguard-border rounded hover:border-vanguard-species/50 hover:text-vanguard-species transition-all shrink-0">
                         <span className="w-2 h-2 rounded-full bg-vanguard-species animate-pulse shrink-0" />
                         <span className="hidden xl:inline tracking-wider">SPECIES</span>
                     </button>
-                    <button onClick={() => parkId && navigate(`/park/${parkId}/sound`)}
+                    <button onClick={() => estateId && navigate(`/estate/${estateId}/sound`)}
                         title="Sound Analysis"
                         className="flex items-center gap-2 px-3.5 py-2 text-[11px] font-mono font-bold bg-vanguard-panel border border-vanguard-border rounded hover:border-vanguard-community/50 hover:text-vanguard-community transition-all shrink-0">
                         <Activity className="w-4 h-4 text-vanguard-community" />

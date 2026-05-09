@@ -1,10 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import { Thermometer, Wind, CloudRain, AlertTriangle, Wifi, WifiOff } from 'lucide-react';
-import { PARKS } from '../lib/parksData';
+import { ESTATES } from '../lib/estatesData';
 import { useLiveAlerts, EnvironmentData } from '../lib/liveStream';
 
 interface EnvironmentPanelProps {
-    parkId?: string | null;
+    estateId?: string | null;
     coords?: [number, number] | null; // [lat, lon] override for estate mode
 }
 
@@ -31,16 +31,16 @@ function getThreatBg(multiplier: number): string {
     return 'bg-green-500/10 border-green-500/30';
 }
 
-const EnvironmentPanel: React.FC<EnvironmentPanelProps> = ({ parkId, coords }) => {
-    const park = PARKS.find(p => p.id === parkId);
-    const { environmentData: liveEnv } = useLiveAlerts(parkId);
+const EnvironmentPanel: React.FC<EnvironmentPanelProps> = ({ estateId, coords }) => {
+    const estate = ESTATES.find(p => p.id === estateId);
+    const { environmentData: liveEnv } = useLiveAlerts(estateId);
     const [localEnv, setLocalEnv] = useState<EnvironmentData | null>(null);
     const [loading, setLoading] = useState(false);
 
-    // Determine which coordinates to use: explicit coords override > park center
-    const fetchCoords: [number, number] | null = coords ?? (park ? park.centerCoordinates : null);
+    // Determine which coordinates to use: explicit coords override > estate center
+    const fetchCoords: [number, number] | null = coords ?? (estate ? estate.centerCoordinates : null);
 
-    // Fetch environment data on mount and when coords / park changes
+    // Fetch environment data on mount and when coords / estate changes
     useEffect(() => {
         if (!fetchCoords) return;
         const [lat, lon] = fetchCoords;
@@ -51,13 +51,13 @@ const EnvironmentPanel: React.FC<EnvironmentPanelProps> = ({ parkId, coords }) =
             .catch(() => setLocalEnv(null))
             .finally(() => setLoading(false));
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [parkId, coords?.join(',')]);
+    }, [estateId, coords?.join(',')]);
 
     // Prefer SSE-pushed data (liveEnv) over locally fetched data
     const env = liveEnv || localEnv;
 
-    // For estate mode without a parkId match, we still want to render once coords are available
-    if (!park && !coords) return null;
+    // For estate mode without a estateId match, we still want to render once coords are available
+    if (!estate && !coords) return null;
 
     return (
         <div className="flex flex-col gap-2 p-3 bg-vanguard-panel border border-vanguard-border rounded-lg">

@@ -2,7 +2,7 @@
   "nagarhole": [
     {
       "id": "ngh-spot-1",
-      "parkId": "nagarhole",
+      "estateId": "nagarhole",
       "speciesCommonName": "Asian Elephant",
       "scientificName": "Elephas maximus indicus",
       "zone": "Z2",
@@ -12,7 +12,7 @@
     },
     {
       "id": "ngh-spot-2",
-      "parkId": "nagarhole",
+      "estateId": "nagarhole",
       "speciesCommonName": "Bengal Tiger",
       "scientificName": "Panthera tigris tigris",
       "zone": "Z4",
@@ -24,7 +24,7 @@
   "corbett": [
     {
       "id": "cor-spot-1",
-      "parkId": "corbett",
+      "estateId": "corbett",
       "speciesCommonName": "Bengal Tiger",
       "scientificName": "Panthera tigris tigris",
       "zone": "Z3",
@@ -36,7 +36,7 @@
   "kaziranga": [
     {
       "id": "kaz-spot-1",
-      "parkId": "kaziranga",
+      "estateId": "kaziranga",
       "speciesCommonName": "Indian One-horned Rhinoceros",
       "scientificName": "Rhinoceros unicornis",
       "zone": "Z1",
@@ -48,7 +48,7 @@
   "sundarbans": [
     {
       "id": "sun-spot-1",
-      "parkId": "sundarbans",
+      "estateId": "sundarbans",
       "speciesCommonName": "Sundarbans Bengal Tiger",
       "scientificName": "Panthera tigris tigris",
       "zone": "Z5",
@@ -60,7 +60,7 @@
   "maasai-mara": [
     {
       "id": "mara-spot-1",
-      "parkId": "maasai-mara",
+      "estateId": "maasai-mara",
       "speciesCommonName": "African Lion",
       "scientificName": "Panthera leo melanochaita",
       "zone": "Z6",
@@ -72,7 +72,7 @@
   "kruger": [
     {
       "id": "kru-spot-1",
-      "parkId": "kruger",
+      "estateId": "kruger",
       "speciesCommonName": "African Wild Dog",
       "scientificName": "Lycaon pictus",
       "zone": "Z7",

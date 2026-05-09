@@ -14,8 +14,8 @@ create table public.profiles (
   created_at   timestamptz not null default now()
 );
 
--- ─── PARKS (government, seeded) ──────────────────────────────
-create table public.parks (
+-- ─── ESTATES (government, seeded) ──────────────────────────────
+create table public.estates (
   id          uuid primary key default uuid_generate_v4(),
   name        text not null,
   country     text not null,
@@ -39,25 +39,25 @@ create table public.estates (
   created_at    timestamptz not null default now()
 );
 
--- ─── ZONES (linked to park OR estate, not both) ───────────────
+-- ─── ZONES (linked to estate OR estate, not both) ───────────────
 create table public.zones (
   id         uuid primary key default uuid_generate_v4(),
-  park_id    uuid references public.parks(id) on delete cascade,
+  estate_id    uuid references public.estates(id) on delete cascade,
   estate_id  uuid references public.estates(id) on delete cascade,
   name       text not null,
   status     text not null check (status in ('critical', 'warning', 'normal')) default 'normal',
   polygon    jsonb not null,  -- GeoJSON Polygon (WGS84)
   created_at timestamptz not null default now(),
   constraint zone_has_single_parent check (
-    (park_id is not null and estate_id is null) or
-    (park_id is null and estate_id is not null)
+    (estate_id is not null and estate_id is null) or
+    (estate_id is null and estate_id is not null)
   )
 );
 
 -- ─── ALERTS ──────────────────────────────────────────────────
 create table public.alerts (
   id          uuid primary key default uuid_generate_v4(),
-  park_id     uuid references public.parks(id),
+  estate_id     uuid references public.estates(id),
   estate_id   uuid references public.estates(id),
   zone_id     uuid references public.zones(id),
   type        text not null,
@@ -70,7 +70,7 @@ create table public.alerts (
 
 -- ─── ROW LEVEL SECURITY ──────────────────────────────────────
 alter table public.profiles enable row level security;
-alter table public.parks    enable row level security;
+alter table public.estates    enable row level security;
 alter table public.estates  enable row level security;
 alter table public.zones    enable row level security;
 alter table public.alerts   enable row level security;
@@ -79,8 +79,8 @@ alter table public.alerts   enable row level security;
 create policy "profiles_select_own" on public.profiles for select using (auth.uid() = id);
 create policy "profiles_update_own" on public.profiles for update using (auth.uid() = id);
 
--- Parks: public read
-create policy "parks_select_all"    on public.parks    for select using (true);
+-- Estates: public read
+create policy "estates_select_all"    on public.estates    for select using (true);
 
 -- Estates: owner only
 create policy "estates_select_own"  on public.estates  for select using (auth.uid() = owner_id);
@@ -88,8 +88,8 @@ create policy "estates_insert_own"  on public.estates  for insert with check (au
 create policy "estates_update_own"  on public.estates  for update using (auth.uid() = owner_id);
 create policy "estates_delete_own"  on public.estates  for delete using (auth.uid() = owner_id);
 
--- Zones: park zones = public read; estate zones = owner only
-create policy "zones_select_park"   on public.zones    for select using (park_id is not null);
+-- Zones: estate zones = public read; estate zones = owner only
+create policy "zones_select_estate"   on public.zones    for select using (estate_id is not null);
 create policy "zones_select_estate" on public.zones    for select using (
   estate_id is not null and
   exists (select 1 from public.estates where id = zones.estate_id and owner_id = auth.uid())
@@ -99,8 +99,8 @@ create policy "zones_insert_estate" on public.zones    for insert with check (
   exists (select 1 from public.estates where id = zones.estate_id and owner_id = auth.uid())
 );
 
--- Alerts: park alerts = public read; estate alerts = owner only
-create policy "alerts_select_park"   on public.alerts  for select using (park_id is not null);
+-- Alerts: estate alerts = public read; estate alerts = owner only
+create policy "alerts_select_estate"   on public.alerts  for select using (estate_id is not null);
 create policy "alerts_select_estate" on public.alerts  for select using (
   estate_id is not null and
   exists (select 1 from public.estates where id = alerts.estate_id and owner_id = auth.uid())
@@ -124,14 +124,14 @@ create trigger on_auth_user_created
   after insert on auth.users
   for each row execute procedure public.handle_new_user();
 
--- ─── SEED PARKS ──────────────────────────────────────────────
-insert into public.parks (id, name, country, center_lat, center_lon) values
-  ('11111111-1111-1111-1111-111111111111', 'Nagarhole National Park',       'India',        11.9833,  76.1167),
-  ('22222222-2222-2222-2222-222222222222', 'Jim Corbett National Park',     'India',        29.5300,  78.7747),
-  ('33333333-3333-3333-3333-333333333333', 'Kaziranga National Park',       'India',        26.5775,  93.1711),
-  ('44444444-4444-4444-4444-444444444444', 'Sundarbans National Park',      'India',        21.9497,  88.9468),
+-- ─── SEED ESTATES ──────────────────────────────────────────────
+insert into public.estates (id, name, country, center_lat, center_lon) values
+  ('11111111-1111-1111-1111-111111111111', 'Nagarhole National Estate',       'India',        11.9833,  76.1167),
+  ('22222222-2222-2222-2222-222222222222', 'Jim Corbett National Estate',     'India',        29.5300,  78.7747),
+  ('33333333-3333-3333-3333-333333333333', 'Kaziranga National Estate',       'India',        26.5775,  93.1711),
+  ('44444444-4444-4444-4444-444444444444', 'Sundarbans National Estate',      'India',        21.9497,  88.9468),
   ('55555555-5555-5555-5555-555555555555', 'Maasai Mara National Reserve',  'Kenya',        -1.4061,  35.1019),
-  ('66666666-6666-6666-6666-666666666666', 'Kruger National Park',          'South Africa', -23.9884, 31.5547);
+  ('66666666-6666-6666-6666-666666666666', 'Kruger National Estate',          'South Africa', -23.9884, 31.5547);
 
 -- ─── ADMIN: Assign government role to a specific email ────────
 -- Run this manually for each government user after they sign up:
