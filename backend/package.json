@@ -15,10 +15,10 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@google/earthengine": "^1.7.19",
+    "@google/earthengine": "^1.7.30",
     "cors": "^2.8.5",
-    "express": "^4.19.2",
-    "mongoose": "^8.0.0",
-    "uuid": "^9.0.0"
+    "express": "^5.2.1",
+    "mongoose": "^9.6.3",
+    "uuid": "^14.0.0"
   }
 }
