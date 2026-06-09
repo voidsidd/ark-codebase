@@ -31,11 +31,10 @@ jobs:
       - name: Install dependencies
         run: npm install
 
-      # ESLint — catches real bugs, not just style
+      # ESLint — use npx to avoid binary permission issues from Windows-committed node_modules
       - name: Lint (ESLint)
-        run: npm run lint
+        run: npx eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0
 
-      # TypeScript strict compile — zero type errors allowed
       - name: Type-check (tsc)
         run: npx tsc --noEmit
 
@@ -43,7 +42,11 @@ jobs:
       - name: Build
         env:
           VITE_CESIUM_ION_TOKEN: ${{ secrets.VITE_CESIUM_ION_TOKEN || 'ci-placeholder' }}
-        run: npm run build
+        run: npx vite build
+
+      - name: Security audit (high/critical only)
+        run: npm audit --audit-level=high
+        continue-on-error: true  # warn but don't block — fix progressively
 
       - name: Upload build artifact
         uses: actions/upload-artifact@v4
@@ -76,6 +79,38 @@ jobs:
       - name: Install dependencies
         run: npm install
 
-      # Node.js syntax check — catches obvious crashes before deploy
       - name: Syntax check (node --check)
         run: node --check server.js
+
+      - name: Security audit (high/critical only)
+        run: npm audit --audit-level=high
+        continue-on-error: true
+
+  # ─────────────────────────────────────────────
+  # PYTHON AI ENGINE  (Flake8 + Syntax check)
+  # ─────────────────────────────────────────────
+  python:
+    name: Python AI Engine CI
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install flake8
+        run: pip install flake8
+
+      - name: Syntax check all Python files
+        run: python -m py_compile $(find backend/ai_engine -name "*.py") && echo "✅ All Python files have valid syntax"
+
+      - name: Lint with flake8
+        run: |
+          flake8 backend/ai_engine \
+            --max-line-length=120 \
+            --extend-ignore=E501,W503,E203 \
+            --exclude=__pycache__,.venv,venv
