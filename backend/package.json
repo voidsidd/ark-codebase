@@ -19,7 +19,7 @@
   "dependencies": {
     "@google/earthengine": "^1.7.19",
     "@turf/turf": "^7.1.0",
-    "axios": "^1.7.0",
+    "axios": "^1.17.0",
     "cors": "^2.8.6",
     "express": "^5.2.1",
     "mongoose": "^9.3.3",
