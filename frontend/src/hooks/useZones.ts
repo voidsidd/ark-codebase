@@ -9,38 +9,44 @@ export function useZones(initialZones: Zone[] = []) {
   const addZone = useCallback((zone: Omit<Zone, 'id'>) => {
     const newZone: Zone = {
       ...zone,
-      id: `zone-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
+      id: `zone-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
     };
-    setZones(prev => [...prev, newZone]);
+    setZones((prev) => [...prev, newZone]);
   }, []);
 
   const updateZone = useCallback((id: string, updates: Partial<Zone>) => {
-    setZones(prev => prev.map(z => z.id === id ? { ...z, ...updates } : z));
+    setZones((prev) => prev.map((z) => (z.id === id ? { ...z, ...updates } : z)));
   }, []);
 
-  const deleteZone = useCallback((id: string) => {
-    setZones(prev => prev.filter(z => z.id !== id));
-    setAlerts(prev => prev.filter(a => a.zoneId !== id));
-    if (selectedZone?.id === id) setSelectedZone(null);
-  }, [selectedZone]);
+  const deleteZone = useCallback(
+    (id: string) => {
+      setZones((prev) => prev.filter((z) => z.id !== id));
+      setAlerts((prev) => prev.filter((a) => a.zoneId !== id));
+      if (selectedZone?.id === id) setSelectedZone(null);
+    },
+    [selectedZone]
+  );
 
-  const addAlert = useCallback((alert: Omit<Alert, 'id' | 'timestamp'>) => {
-    const newAlert: Alert = {
-      ...alert,
-      id: `alert-${Date.now()}`,
-      timestamp: new Date().toISOString()
-    };
-    setAlerts(prev => [newAlert, ...prev].slice(0, 100));
-    
-    const zone = zones.find(z => z.id === alert.zoneId);
-    if (zone) {
-      updateZone(zone.id, { alerts: (zone.alerts || 0) + 1 });
-    }
-  }, [zones, updateZone]);
+  const addAlert = useCallback(
+    (alert: Omit<Alert, 'id' | 'timestamp'>) => {
+      const newAlert: Alert = {
+        ...alert,
+        id: `alert-${Date.now()}`,
+        timestamp: new Date().toISOString(),
+      };
+      setAlerts((prev) => [newAlert, ...prev].slice(0, 100));
+
+      const zone = zones.find((z) => z.id === alert.zoneId);
+      if (zone) {
+        updateZone(zone.id, { alerts: (zone.alerts || 0) + 1 });
+      }
+    },
+    [zones, updateZone]
+  );
 
   const clearAlerts = useCallback(() => {
     setAlerts([]);
-    setZones(prev => prev.map(z => ({ ...z, alerts: 0 })));
+    setZones((prev) => prev.map((z) => ({ ...z, alerts: 0 })));
   }, []);
 
   return {
@@ -54,6 +60,6 @@ export function useZones(initialZones: Zone[] = []) {
     addAlert,
     clearAlerts,
     totalAlerts: alerts.length,
-    criticalAlerts: alerts.filter(a => a.severity === 'critical').length
+    criticalAlerts: alerts.filter((a) => a.severity === 'critical').length,
   };
 }

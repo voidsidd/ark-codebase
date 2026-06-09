@@ -10,23 +10,20 @@ export async function getRoute(
   endLon: number
 ): Promise<RouteResult | null> {
   try {
-    const response = await axios.get(
-      `${OSRM_URL}/${startLon},${startLat};${endLon},${endLat}`,
-      {
-        params: {
-          overview: 'full',
-          geometries: 'geojson'
-        },
-        timeout: 10000
-      }
-    );
-    
+    const response = await axios.get(`${OSRM_URL}/${startLon},${startLat};${endLon},${endLat}`, {
+      params: {
+        overview: 'full',
+        geometries: 'geojson',
+      },
+      timeout: 10000,
+    });
+
     if (response.data.code === 'Ok' && response.data.routes[0]) {
       const route = response.data.routes[0];
       return {
         distance: route.distance,
         duration: route.duration,
-        geometry: route.geometry
+        geometry: route.geometry,
       };
     }
     return null;

@@ -29,7 +29,9 @@ export default function ZoneManager({
   const [mounted, setMounted] = useState(false);
 
   // Defer rendering until DOM is fully painted — avoids Cesium mount race
-  useEffect(() => { setMounted(true); }, []);
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   // Resolve any Supabase UUID → short estate ID ('corbett', 'nagarhole', etc.)
   const resolvedId = estateId ? resolveEstateId(estateId) : null;
@@ -41,9 +43,9 @@ export default function ZoneManager({
   // Derive per-zone status from live alert priorities
   const zonePolygons: ZonePolygon[] = estate
     ? Object.entries(estate.zones).map(([zoneId, coords]) => {
-        const zoneAlerts = alerts.filter(a => a.zone === zoneId);
+        const zoneAlerts = alerts.filter((a) => a.zone === zoneId);
         let status: 'critical' | 'warning' | 'normal' = 'normal';
-        if (zoneAlerts.some(a => a.priority === 'CRITICAL' || a.priority === 'HIGH')) {
+        if (zoneAlerts.some((a) => a.priority === 'CRITICAL' || a.priority === 'HIGH')) {
           status = 'critical';
         } else if (zoneAlerts.length > 0) {
           status = 'warning';

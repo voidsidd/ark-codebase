@@ -6,7 +6,13 @@ interface PredictiveAlertBadgeProps {
 
 function PawIcon() {
   return (
-    <svg width={16} height={16} viewBox="0 0 24 24" fill="#FF9500" xmlns="http://www.w3.org/2000/svg">
+    <svg
+      width={16}
+      height={16}
+      viewBox="0 0 24 24"
+      fill="#FF9500"
+      xmlns="http://www.w3.org/2000/svg"
+    >
       <ellipse cx="6" cy="5.5" rx="2" ry="2.5" />
       <ellipse cx="10" cy="3.5" rx="1.8" ry="2.2" />
       <ellipse cx="14" cy="3.5" rx="1.8" ry="2.2" />
@@ -31,13 +37,15 @@ const PredictiveAlertBadge: React.FC<PredictiveAlertBadgeProps> = ({ correlation
       }}
     >
       <PawIcon />
-      <span style={{
-        fontFamily: 'monospace',
-        fontSize: '10px',
-        color: '#FF9500',
-        letterSpacing: '0.1em',
-        fontWeight: 600,
-      }}>
+      <span
+        style={{
+          fontFamily: 'monospace',
+          fontSize: '10px',
+          color: '#FF9500',
+          letterSpacing: '0.1em',
+          fontWeight: 600,
+        }}
+      >
         PREDICTIVE
       </span>
     </span>

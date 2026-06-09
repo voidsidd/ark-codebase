@@ -10,9 +10,7 @@ interface AuthLoadingScreenProps {
   label?: string;
 }
 
-const AuthLoadingScreen: React.FC<AuthLoadingScreenProps> = ({
-  label = 'AUTHENTICATING',
-}) => {
+const AuthLoadingScreen: React.FC<AuthLoadingScreenProps> = ({ label = 'AUTHENTICATING' }) => {
   return (
     <div
       style={{

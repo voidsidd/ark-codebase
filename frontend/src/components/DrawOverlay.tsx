@@ -43,7 +43,10 @@ export default function DrawOverlay({
   const svgRef = useRef<SVGSVGElement>(null);
 
   // Convert all points to screen coords
-  const screenPoints = points.map(p => latLonToScreen(p)).filter(Boolean) as { x: number; y: number }[];
+  const screenPoints = points.map((p) => latLonToScreen(p)).filter(Boolean) as {
+    x: number;
+    y: number;
+  }[];
   const hoverScreen = hoverPoint ? latLonToScreen(hoverPoint) : null;
 
   // Check if cursor is near the first point (for snap-to-close)
@@ -58,42 +61,48 @@ export default function DrawOverlay({
   const nearFirst = isNearFirst();
 
   // Handle click on SVG
-  const handleClick = useCallback((e: MouseEvent<SVGSVGElement>) => {
-    if (isClosed) return;
-    const rect = svgRef.current?.getBoundingClientRect();
-    if (!rect) return;
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
+  const handleClick = useCallback(
+    (e: MouseEvent<SVGSVGElement>) => {
+      if (isClosed) return;
+      const rect = svgRef.current?.getBoundingClientRect();
+      if (!rect) return;
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
 
-    // Check snap-to-close
-    if (canClose && screenPoints.length > 0) {
-      const first = screenPoints[0];
-      const dx = x - first.x;
-      const dy = y - first.y;
-      if (Math.sqrt(dx * dx + dy * dy) < snapDistancePx) {
-        onClosePolygon();
-        return;
+      // Check snap-to-close
+      if (canClose && screenPoints.length > 0) {
+        const first = screenPoints[0];
+        const dx = x - first.x;
+        const dy = y - first.y;
+        if (Math.sqrt(dx * dx + dy * dy) < snapDistancePx) {
+          onClosePolygon();
+          return;
+        }
       }
-    }
 
-    const pt = screenToLatLon(x, y);
-    if (pt) onAddPoint(pt);
-  }, [isClosed, canClose, screenPoints, snapDistancePx, onClosePolygon, screenToLatLon, onAddPoint]);
+      const pt = screenToLatLon(x, y);
+      if (pt) onAddPoint(pt);
+    },
+    [isClosed, canClose, screenPoints, snapDistancePx, onClosePolygon, screenToLatLon, onAddPoint]
+  );
 
   // Handle mouse move
-  const handleMouseMove = useCallback((e: MouseEvent<SVGSVGElement>) => {
-    const rect = svgRef.current?.getBoundingClientRect();
-    if (!rect) return;
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
-    const pt = screenToLatLon(x, y);
+  const handleMouseMove = useCallback(
+    (e: MouseEvent<SVGSVGElement>) => {
+      const rect = svgRef.current?.getBoundingClientRect();
+      if (!rect) return;
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
+      const pt = screenToLatLon(x, y);
 
-    if (isDragging && dragIndex !== null && pt) {
-      onMoveVertex(dragIndex, pt);
-    } else {
-      onSetHover(pt);
-    }
-  }, [isDragging, dragIndex, screenToLatLon, onMoveVertex, onSetHover]);
+      if (isDragging && dragIndex !== null && pt) {
+        onMoveVertex(dragIndex, pt);
+      } else {
+        onSetHover(pt);
+      }
+    },
+    [isDragging, dragIndex, screenToLatLon, onMoveVertex, onSetHover]
+  );
 
   const handleMouseUp = useCallback(() => {
     if (isDragging) onStopDrag();
@@ -136,7 +145,7 @@ export default function DrawOverlay({
       onClick={handleClick}
       onMouseMove={handleMouseMove}
       onMouseUp={handleMouseUp}
-      onContextMenu={e => e.preventDefault()}
+      onContextMenu={(e) => e.preventDefault()}
     >
       {/* Polygon fill (when closed) */}
       {isClosed && screenPoints.length >= 3 && (
@@ -150,12 +159,7 @@ export default function DrawOverlay({
 
       {/* Edges (when open) */}
       {!isClosed && screenPoints.length >= 2 && (
-        <path
-          d={buildPath()}
-          fill="none"
-          stroke="rgba(16, 185, 129, 0.8)"
-          strokeWidth="2"
-        />
+        <path d={buildPath()} fill="none" stroke="rgba(16, 185, 129, 0.8)" strokeWidth="2" />
       )}
 
       {/* Preview line (dashed, cursor → last point) */}
@@ -193,11 +197,11 @@ export default function DrawOverlay({
           stroke="white"
           strokeWidth="1.5"
           style={{ cursor: isClosed ? 'grab' : 'pointer' }}
-          onMouseDown={e => {
+          onMouseDown={(e) => {
             e.stopPropagation();
             if (isClosed) onStartDrag(i);
           }}
-          onContextMenu={e => {
+          onContextMenu={(e) => {
             e.preventDefault();
             e.stopPropagation();
             if (isClosed) onDeleteVertex(i);
@@ -206,33 +210,34 @@ export default function DrawOverlay({
       ))}
 
       {/* Edge midpoints (insert vertex) — only when closed */}
-      {isClosed && screenPoints.map((sp, i) => {
-        const next = screenPoints[(i + 1) % screenPoints.length];
-        const mx = (sp.x + next.x) / 2;
-        const my = (sp.y + next.y) / 2;
-        return (
-          <circle
-            key={`mid-${i}`}
-            cx={mx}
-            cy={my}
-            r={3}
-            fill="rgba(16, 185, 129, 0.3)"
-            stroke="rgba(16, 185, 129, 0.5)"
-            strokeWidth="1"
-            style={{ cursor: 'pointer' }}
-            onClick={e => {
-              e.stopPropagation();
-              // Insert midpoint as new vertex
-              const pt = screenToLatLon(mx, my);
-              if (pt) {
-                const newPts = [...points];
-                newPts.splice(i + 1, 0, pt);
-                onMoveVertex(i + 1, pt); // hacky but triggers re-render
-              }
-            }}
-          />
-        );
-      })}
+      {isClosed &&
+        screenPoints.map((sp, i) => {
+          const next = screenPoints[(i + 1) % screenPoints.length];
+          const mx = (sp.x + next.x) / 2;
+          const my = (sp.y + next.y) / 2;
+          return (
+            <circle
+              key={`mid-${i}`}
+              cx={mx}
+              cy={my}
+              r={3}
+              fill="rgba(16, 185, 129, 0.3)"
+              stroke="rgba(16, 185, 129, 0.5)"
+              strokeWidth="1"
+              style={{ cursor: 'pointer' }}
+              onClick={(e) => {
+                e.stopPropagation();
+                // Insert midpoint as new vertex
+                const pt = screenToLatLon(mx, my);
+                if (pt) {
+                  const newPts = [...points];
+                  newPts.splice(i + 1, 0, pt);
+                  onMoveVertex(i + 1, pt); // hacky but triggers re-render
+                }
+              }}
+            />
+          );
+        })}
     </svg>
   );
 }

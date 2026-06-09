@@ -38,10 +38,12 @@ async function fetchHistoricalIncidents(zoneId: string, hourOfDay: number) {
   }
 
   // Filter ±2 hours client-side
-  return (data ?? []).filter(record => {
-    const hour = new Date(record.created_at).getHours();
-    return Math.abs(hour - hourOfDay) <= 2;
-  }).slice(0, 15);
+  return (data ?? [])
+    .filter((record) => {
+      const hour = new Date(record.created_at).getHours();
+      return Math.abs(hour - hourOfDay) <= 2;
+    })
+    .slice(0, 15);
 }
 
 // ─── Main export ─────────────────────────────────────────────────────────────
@@ -69,15 +71,15 @@ export async function runHypothesis(alert: AlertEvent): Promise<HypothesisResult
       time_of_day: `${hourOfDay.toString().padStart(2, '0')}:00`,
       sub_type: alert.subType,
     },
-    historical_incidents: historical.map(i => ({
+    historical_incidents: historical.map((i) => ({
       source_type: i.source_type,
       description: i.description,
       confidence: i.confidence,
       outcome: i.outcome,
       time_of_day: new Date(i.created_at).toTimeString().slice(0, 5),
     })),
-    confirmed_incident_count: historical.filter(i => i.outcome === 'confirmed_incident').length,
-    false_positive_count: historical.filter(i => i.outcome === 'false_positive').length,
+    confirmed_incident_count: historical.filter((i) => i.outcome === 'confirmed_incident').length,
+    false_positive_count: historical.filter((i) => i.outcome === 'false_positive').length,
   };
 
   const response = await fetch(
@@ -87,8 +89,9 @@ export async function runHypothesis(alert: AlertEvent): Promise<HypothesisResult
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         system_instruction: {
-          parts: [{
-            text: `You are a wildlife security intelligence analyst with 15 years of field experience. You assess incoming sensor alerts against historical incident data to determine whether an alert represents a genuine threat.
+          parts: [
+            {
+              text: `You are a wildlife security intelligence analyst with 15 years of field experience. You assess incoming sensor alerts against historical incident data to determine whether an alert represents a genuine threat.
 
 You must return ONLY a valid JSON object. No preamble. No explanation. No markdown code fences. Just the raw JSON object.
 
@@ -98,19 +101,24 @@ The JSON object must have exactly these four fields:
 - "supporting_evidence": string — two to three sentences explaining which historical patterns support your assessment. Reference specific data points (e.g. "4 of 7 historical ACOUSTIC events in this zone during the 01:00–03:00 window were confirmed incidents").
 - "recommended_action": string — one specific, actionable instruction starting with a verb. Name a specific gate, road, or patrol unit if the zone context allows. Include timing (e.g. "within 8 minutes").
 
-Do not hedge. Do not use passive voice. If confidence is above 70, be assertive. If below 40, still commit to a recommendation but qualify it with "Possible:" at the start of the hypothesis.`
-          }]
+Do not hedge. Do not use passive voice. If confidence is above 70, be assertive. If below 40, still commit to a recommendation but qualify it with "Possible:" at the start of the hypothesis.`,
+            },
+          ],
         },
-        contents: [{
-          parts: [{
-            text: `Assess this incoming alert:\n\n${JSON.stringify(context, null, 2)}`
-          }]
-        }],
+        contents: [
+          {
+            parts: [
+              {
+                text: `Assess this incoming alert:\n\n${JSON.stringify(context, null, 2)}`,
+              },
+            ],
+          },
+        ],
         generationConfig: {
           temperature: 0.2,
           maxOutputTokens: 500,
-        }
-      })
+        },
+      }),
     }
   );
 
@@ -122,7 +130,10 @@ Do not hedge. Do not use passive voice. If confidence is above 70, be assertive.
   let rawText = data?.candidates?.[0]?.content?.parts?.[0]?.text ?? '';
 
   // Strip accidental markdown fences
-  rawText = rawText.replace(/```json\s*/gi, '').replace(/```\s*/g, '').trim();
+  rawText = rawText
+    .replace(/```json\s*/gi, '')
+    .replace(/```\s*/g, '')
+    .trim();
 
   let parsed: any;
   try {
@@ -154,14 +165,17 @@ Do not hedge. Do not use passive voice. If confidence is above 70, be assertive.
   // Write to Supabase (non-blocking)
   supabase
     .from('alerts')
-    .upsert({
-      id: alert.id,
-      zone_id: alert.zone,
-      severity: alert.priority,
-      source_type: alert.type,
-      description: alert.description,
-      hypothesis: result,
-    }, { onConflict: 'id' })
+    .upsert(
+      {
+        id: alert.id,
+        zone_id: alert.zone,
+        severity: alert.priority,
+        source_type: alert.type,
+        description: alert.description,
+        hypothesis: result,
+      },
+      { onConflict: 'id' }
+    )
     .then(({ error }) => {
       if (error) console.warn('[hypothesisEngine] Supabase write failed:', error.message);
     });

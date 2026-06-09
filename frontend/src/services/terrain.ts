@@ -7,11 +7,11 @@ export async function getElevation(lat: number, lon: number): Promise<number | n
     const response = await axios.post(
       ELEVATION_URL,
       {
-        locations: [{ latitude: lat, longitude: lon }]
+        locations: [{ latitude: lat, longitude: lon }],
       },
       { timeout: 5000 }
     );
-    
+
     return response.data.results[0]?.elevation || null;
   } catch (error) {
     console.error('Elevation error:', error);

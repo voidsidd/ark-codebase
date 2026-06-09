@@ -36,7 +36,7 @@ export async function fetchTrackedAnimals(): Promise<TrackedAnimal[]> {
 
   // Deduplicate — keep most recent sighting per animal_id
   const seen = new Set<string>();
-  return (data ?? []).filter(a => {
+  return (data ?? []).filter((a) => {
     if (seen.has(a.animal_id)) return false;
     seen.add(a.animal_id);
     return true;
@@ -66,26 +66,25 @@ export async function triggerAnimalSighting(
   zoneId: string,
   cameraTrapId: string
 ): Promise<EcologyTriggerResult> {
-  const { data: { session } } = await supabase.auth.getSession();
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
 
   const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string;
 
-  const response = await fetch(
-    `${supabaseUrl}/functions/v1/ecology-trigger`,
-    {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${session?.access_token ?? ''}`,
-      },
-      body: JSON.stringify({
-        animal_id: animalId,
-        species,
-        zone_id: zoneId,
-        camera_trap_id: cameraTrapId,
-      }),
-    }
-  );
+  const response = await fetch(`${supabaseUrl}/functions/v1/ecology-trigger`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${session?.access_token ?? ''}`,
+    },
+    body: JSON.stringify({
+      animal_id: animalId,
+      species,
+      zone_id: zoneId,
+      camera_trap_id: cameraTrapId,
+    }),
+  });
 
   if (!response.ok) {
     throw new Error(`Edge function failed: ${response.status}`);

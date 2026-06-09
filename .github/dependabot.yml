@@ -7,6 +7,10 @@ updates:
       interval: "weekly"
       day: "monday"
       time: "09:00"
+    groups:
+      frontend-npm:
+        patterns:
+          - "*"
     open-pull-requests-limit: 5
     labels:
       - "dependencies"
@@ -21,6 +25,10 @@ updates:
       interval: "weekly"
       day: "monday"
       time: "09:00"
+    groups:
+      npm-updates:
+        patterns:
+          - "*"
     open-pull-requests-limit: 5
     labels:
       - "dependencies"
@@ -35,6 +43,10 @@ updates:
       interval: "weekly"
       day: "monday"
       time: "09:00"
+    groups:
+      python-packages:
+        patterns:
+          - "*"
     open-pull-requests-limit: 3
     labels:
       - "dependencies"

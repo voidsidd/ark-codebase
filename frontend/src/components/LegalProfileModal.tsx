@@ -30,7 +30,11 @@ const LegalProfileModal: React.FC<Props> = ({ onSave, onCancel }) => {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    const profile: LegalProfile = { district: district.trim(), state: state.trim(), surveyNumber: surveyNumber.trim() || undefined };
+    const profile: LegalProfile = {
+      district: district.trim(),
+      state: state.trim(),
+      surveyNumber: surveyNumber.trim() || undefined,
+    };
     saveLegalProfile(profile);
     onSave(profile);
   };
@@ -44,10 +48,15 @@ const LegalProfileModal: React.FC<Props> = ({ onSave, onCancel }) => {
             <FileText className="w-4 h-4 text-vanguard-camera" />
             <div>
               <div className="text-xs font-mono tracking-widest text-white">REPORT DETAILS</div>
-              <div className="text-[10px] font-mono text-white/40">Required for evidence report header</div>
+              <div className="text-[10px] font-mono text-white/40">
+                Required for evidence report header
+              </div>
             </div>
           </div>
-          <button onClick={onCancel} className="text-white/30 hover:text-white/70 transition-colors">
+          <button
+            onClick={onCancel}
+            className="text-white/30 hover:text-white/70 transition-colors"
+          >
             <X className="w-4 h-4" />
           </button>
         </div>
@@ -55,27 +64,32 @@ const LegalProfileModal: React.FC<Props> = ({ onSave, onCancel }) => {
         {/* Form */}
         <form onSubmit={handleSubmit} className="p-5 space-y-4">
           <div className="text-[10px] font-mono text-white/40 leading-relaxed">
-            These details appear on your evidence report cover page. Only district and state are required.
+            These details appear on your evidence report cover page. Only district and state are
+            required.
           </div>
 
           <div className="space-y-3">
             <div>
-              <label className="block text-[10px] font-mono text-white/50 mb-1 tracking-widest">DISTRICT *</label>
+              <label className="block text-[10px] font-mono text-white/50 mb-1 tracking-widest">
+                DISTRICT *
+              </label>
               <input
                 required
                 value={district}
-                onChange={e => setDistrict(e.target.value)}
+                onChange={(e) => setDistrict(e.target.value)}
                 placeholder="e.g. Mysuru"
                 className="w-full bg-black/60 border border-vanguard-border rounded px-3 py-2 text-xs font-mono text-white outline-none focus:border-vanguard-camera placeholder:text-white/20"
               />
             </div>
 
             <div>
-              <label className="block text-[10px] font-mono text-white/50 mb-1 tracking-widest">STATE *</label>
+              <label className="block text-[10px] font-mono text-white/50 mb-1 tracking-widest">
+                STATE *
+              </label>
               <input
                 required
                 value={state}
-                onChange={e => setState(e.target.value)}
+                onChange={(e) => setState(e.target.value)}
                 placeholder="e.g. Karnataka"
                 className="w-full bg-black/60 border border-vanguard-border rounded px-3 py-2 text-xs font-mono text-white outline-none focus:border-vanguard-camera placeholder:text-white/20"
               />
@@ -87,7 +101,7 @@ const LegalProfileModal: React.FC<Props> = ({ onSave, onCancel }) => {
               </label>
               <input
                 value={surveyNumber}
-                onChange={e => setSurveyNumber(e.target.value)}
+                onChange={(e) => setSurveyNumber(e.target.value)}
                 placeholder="e.g. 204/3B"
                 className="w-full bg-black/60 border border-vanguard-border rounded px-3 py-2 text-xs font-mono text-white outline-none focus:border-vanguard-camera placeholder:text-white/20"
               />

@@ -19,7 +19,7 @@ async function sha256(message: string): Promise<string> {
   const msgBuffer = new TextEncoder().encode(message);
   const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
   const hashArray = Array.from(new Uint8Array(hashBuffer));
-  return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+  return hashArray.map((b) => b.toString(16).padStart(2, '0')).join('');
 }
 
 // ─── Fetch image and convert to base64 for embedding ─────────────────────────
@@ -28,7 +28,7 @@ async function fetchImageAsBase64(url: string): Promise<string | null> {
     const res = await fetch(url);
     if (!res.ok) return null;
     const blob = await res.blob();
-    return await new Promise<string>(resolve => {
+    return await new Promise<string>((resolve) => {
       const reader = new FileReader();
       reader.onload = () => resolve(reader.result as string);
       reader.onerror = () => resolve('');
@@ -46,60 +46,60 @@ async function fetchImageAsBase64(url: string): Promise<string | null> {
 const EXHIBIT_IMAGES: Record<string, [string, string]> = {
   // Acoustic — Gunshot: dense forest / spent shell casings
   GUNSHOT: [
-    'https://images.unsplash.com/photo-1448375240586-882707db888b?w=800&q=80',   // dense forest at night/dusk
-    'https://images.unsplash.com/photo-1542382156956-5a449dc9c3bc?w=800&q=80',   // forest undergrowth path
+    'https://images.unsplash.com/photo-1448375240586-882707db888b?w=800&q=80', // dense forest at night/dusk
+    'https://images.unsplash.com/photo-1542382156956-5a449dc9c3bc?w=800&q=80', // forest undergrowth path
   ],
   // Acoustic — Chainsaw: logging, tree cutting
   CHAINSAW: [
-    'https://images.unsplash.com/photo-1504284769660-e09f0233a2bd?w=800&q=80',   // felled tree/logging
-    'https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=800&q=80',   // forest interior
+    'https://images.unsplash.com/photo-1504284769660-e09f0233a2bd?w=800&q=80', // felled tree/logging
+    'https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=800&q=80', // forest interior
   ],
   // Acoustic — Vehicle engine: dirt track, tyre marks
   VEHICLE_ENGINE: [
-    'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800&q=80',   // forest track/road
-    'https://images.unsplash.com/photo-1519750157634-b6d493a0f77c?w=800&q=80',   // tyre marks on dirt
+    'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800&q=80', // forest track/road
+    'https://images.unsplash.com/photo-1519750157634-b6d493a0f77c?w=800&q=80', // tyre marks on dirt
   ],
   // Camera — Human presence: plantation perimeter, fence breach
   HUMAN_PRESENCE: [
-    'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=800&q=80',   // security fence/perimeter
-    'https://images.unsplash.com/photo-1542621334-a254cf47733d?w=800&q=80',   // plantation tree rows
+    'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=800&q=80', // security fence/perimeter
+    'https://images.unsplash.com/photo-1542621334-a254cf47733d?w=800&q=80', // plantation tree rows
   ],
   // Camera — Vehicle detected: estateed/suspicious vehicle near plantation
   VEHICLE_DETECTED: [
-    'https://images.unsplash.com/photo-1519750157634-b6d493a0f77c?w=800&q=80',   // vehicle on dirt track
-    'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800&q=80',   // forest road entry
+    'https://images.unsplash.com/photo-1519750157634-b6d493a0f77c?w=800&q=80', // vehicle on dirt track
+    'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800&q=80', // forest road entry
   ],
   SUSPICIOUS_VEHICLE: [
-    'https://images.unsplash.com/photo-1494976388531-d1058494cdd8?w=800&q=80',   // dark SUV/truck
-    'https://images.unsplash.com/photo-1519750157634-b6d493a0f77c?w=800&q=80',   // tire marks
+    'https://images.unsplash.com/photo-1494976388531-d1058494cdd8?w=800&q=80', // dark SUV/truck
+    'https://images.unsplash.com/photo-1519750157634-b6d493a0f77c?w=800&q=80', // tire marks
   ],
   // Camera — Behavioral anomaly: stressed animal / disturbed vegetation
   BEHAVIORAL_ANOMALY: [
-    'https://images.unsplash.com/photo-1474511320723-9a56873867b5?w=800&q=80',   // wildlife alert posture
-    'https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=800&q=80',   // disturbed forest floor
+    'https://images.unsplash.com/photo-1474511320723-9a56873867b5?w=800&q=80', // wildlife alert posture
+    'https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=800&q=80', // disturbed forest floor
   ],
   // Community — Snare detected: wire snare on ground
   SNARE_DETECTED: [
-    'https://images.unsplash.com/photo-1448375240586-882707db888b?w=800&q=80',   // forest ground level
-    'https://images.unsplash.com/photo-1542382156956-5a449dc9c3bc?w=800&q=80',   // dense undergrowth
+    'https://images.unsplash.com/photo-1448375240586-882707db888b?w=800&q=80', // forest ground level
+    'https://images.unsplash.com/photo-1542382156956-5a449dc9c3bc?w=800&q=80', // dense undergrowth
   ],
   // Community — Poacher camp: temporary encampment remains
   POACHER_CAMP: [
-    'https://images.unsplash.com/photo-1504280390367-361c6d9f38f4?w=800&q=80',   // crude campsite remains
-    'https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=800&q=80',   // forest clearing
+    'https://images.unsplash.com/photo-1504280390367-361c6d9f38f4?w=800&q=80', // crude campsite remains
+    'https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=800&q=80', // forest clearing
   ],
   // Community — Dead animal / correlated critical
   DEAD_ANIMAL: [
-    'https://images.unsplash.com/photo-1448375240586-882707db888b?w=800&q=80',   // forest scene
-    'https://images.unsplash.com/photo-1474511320723-9a56873867b5?w=800&q=80',   // wildlife context
+    'https://images.unsplash.com/photo-1448375240586-882707db888b?w=800&q=80', // forest scene
+    'https://images.unsplash.com/photo-1474511320723-9a56873867b5?w=800&q=80', // wildlife context
   ],
   CONFIRMED_THREAT_EXTREME: [
-    'https://images.unsplash.com/photo-1448375240586-882707db888b?w=800&q=80',   // dark forest
-    'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=800&q=80',     // perimeter breach
+    'https://images.unsplash.com/photo-1448375240586-882707db888b?w=800&q=80', // dark forest
+    'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=800&q=80', // perimeter breach
   ],
   // Species detected: plantation trees / tagging
   SPECIES_DETECTED: [
-    'https://images.unsplash.com/photo-1542621334-a254cf47733d?w=800&q=80',   // plantation rows
+    'https://images.unsplash.com/photo-1542621334-a254cf47733d?w=800&q=80', // plantation rows
     'https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=800&q=80', // forest canopy
   ],
   // Default fallback
@@ -132,93 +132,101 @@ function getExhibitMeta(alert: AlertEvent): ExhibitMeta {
   const sub = (alert.subType ?? '').toUpperCase();
   const type = (alert.type ?? '').toUpperCase();
 
-  if (sub === 'GUNSHOT') return {
-    labelA: 'EXHIBIT A — Acoustic Waveform Detection Frame',
-    labelB: 'EXHIBIT B — Zone Perimeter Camera Capture',
-    captionA: `Gunshot impulse captured by acoustic array at ${ts}. Frequency signature consistent with high-calibre discharge.`,
-    captionB: `Perimeter camera activated by motion in ${alert.zone ?? 'Unknown Zone'} at time of acoustic event. No secondary visual confirmation obtained.`,
-    stationA: `ACU-${z}-04  |  Acoustic Sensor Array  |  HIGH-GAIN MIC`,
-    stationB: `CAM-${z}-02  |  Perimeter Camera  |  NIGHT-IR`,
-    sensorModeA: 'ACOUSTIC-WAVEFORM',
-    sensorModeB: 'NIGHT-IR',
-  };
+  if (sub === 'GUNSHOT')
+    return {
+      labelA: 'EXHIBIT A — Acoustic Waveform Detection Frame',
+      labelB: 'EXHIBIT B — Zone Perimeter Camera Capture',
+      captionA: `Gunshot impulse captured by acoustic array at ${ts}. Frequency signature consistent with high-calibre discharge.`,
+      captionB: `Perimeter camera activated by motion in ${alert.zone ?? 'Unknown Zone'} at time of acoustic event. No secondary visual confirmation obtained.`,
+      stationA: `ACU-${z}-04  |  Acoustic Sensor Array  |  HIGH-GAIN MIC`,
+      stationB: `CAM-${z}-02  |  Perimeter Camera  |  NIGHT-IR`,
+      sensorModeA: 'ACOUSTIC-WAVEFORM',
+      sensorModeB: 'NIGHT-IR',
+    };
 
-  if (sub === 'CHAINSAW') return {
-    labelA: 'EXHIBIT A — Acoustic Signature: Motorised Cutting Tool',
-    labelB: 'EXHIBIT B — Plantation Boundary Camera',
-    captionA: `Sustained low-frequency harmonic consistent with chainsaw-type motorised cutting detected at ${ts} in ${alert.zone}.`,
-    captionB: `Plantation boundary camera triggered during acoustic window. Visual survey of affected tree line recommended.`,
-    stationA: `ACU-${z}-01  |  Acoustic Sensor  |  SPECTRAL-ANALYSIS`,
-    stationB: `CAM-${z}-05  |  Boundary Camera  |  DAY`,
-    sensorModeA: 'ACOUSTIC-HARMONIC',
-    sensorModeB: 'VISIBLE',
-  };
+  if (sub === 'CHAINSAW')
+    return {
+      labelA: 'EXHIBIT A — Acoustic Signature: Motorised Cutting Tool',
+      labelB: 'EXHIBIT B — Plantation Boundary Camera',
+      captionA: `Sustained low-frequency harmonic consistent with chainsaw-type motorised cutting detected at ${ts} in ${alert.zone}.`,
+      captionB: `Plantation boundary camera triggered during acoustic window. Visual survey of affected tree line recommended.`,
+      stationA: `ACU-${z}-01  |  Acoustic Sensor  |  SPECTRAL-ANALYSIS`,
+      stationB: `CAM-${z}-05  |  Boundary Camera  |  DAY`,
+      sensorModeA: 'ACOUSTIC-HARMONIC',
+      sensorModeB: 'VISIBLE',
+    };
 
-  if (sub === 'VEHICLE_ENGINE' || sub === 'VEHICLE_DETECTED' || sub === 'SUSPICIOUS_VEHICLE') return {
-    labelA: 'EXHIBIT A — Access Track Surveillance Frame',
-    labelB: 'EXHIBIT B — Vehicle Approach Detection Image',
-    captionA: `Unscheduled vehicle presence detected in access corridor at ${ts}. Entry point near ${alert.zone} sector boundary.`,
-    captionB: `Secondary camera captured vehicle approach vector. Registration plate capture attempted — quality subject to conditions.`,
-    stationA: `CAM-${z}-08  |  Access Track Camera  |  WIDE-ANGLE`,
-    stationB: `PIR-${z}-03  |  Passive Infrared Sensor  |  Motion Trigger`,
-    sensorModeA: 'VISIBLE / WIDE-ANGLE',
-    sensorModeB: 'MOTION-TRIGGERED',
-  };
+  if (sub === 'VEHICLE_ENGINE' || sub === 'VEHICLE_DETECTED' || sub === 'SUSPICIOUS_VEHICLE')
+    return {
+      labelA: 'EXHIBIT A — Access Track Surveillance Frame',
+      labelB: 'EXHIBIT B — Vehicle Approach Detection Image',
+      captionA: `Unscheduled vehicle presence detected in access corridor at ${ts}. Entry point near ${alert.zone} sector boundary.`,
+      captionB: `Secondary camera captured vehicle approach vector. Registration plate capture attempted — quality subject to conditions.`,
+      stationA: `CAM-${z}-08  |  Access Track Camera  |  WIDE-ANGLE`,
+      stationB: `PIR-${z}-03  |  Passive Infrared Sensor  |  Motion Trigger`,
+      sensorModeA: 'VISIBLE / WIDE-ANGLE',
+      sensorModeB: 'MOTION-TRIGGERED',
+    };
 
-  if (sub === 'HUMAN_PRESENCE') return {
-    labelA: 'EXHIBIT A — Perimeter Intrusion Detection Frame',
-    labelB: 'EXHIBIT B — Camera Trap Motion Capture',
-    captionA: `Unauthorised human presence detected in ${alert.zone} at ${ts}. Subject observed in restricted plantation area.`,
-    captionB: `Camera trap activated. Subject movement pattern suggests deliberate evasion of primary detection line.`,
-    stationA: `CT-${z}-07  |  Camera Trap  |  NIGHT-IR`,
-    stationB: `PIR-${z}-03  |  Motion Sensor  |  Motion Detection`,
-    sensorModeA: 'NIGHT-IR',
-    sensorModeB: 'PIR-MOTION',
-  };
+  if (sub === 'HUMAN_PRESENCE')
+    return {
+      labelA: 'EXHIBIT A — Perimeter Intrusion Detection Frame',
+      labelB: 'EXHIBIT B — Camera Trap Motion Capture',
+      captionA: `Unauthorised human presence detected in ${alert.zone} at ${ts}. Subject observed in restricted plantation area.`,
+      captionB: `Camera trap activated. Subject movement pattern suggests deliberate evasion of primary detection line.`,
+      stationA: `CT-${z}-07  |  Camera Trap  |  NIGHT-IR`,
+      stationB: `PIR-${z}-03  |  Motion Sensor  |  Motion Detection`,
+      sensorModeA: 'NIGHT-IR',
+      sensorModeB: 'PIR-MOTION',
+    };
 
-  if (sub === 'SNARE_DETECTED') return {
-    labelA: 'EXHIBIT A — Illegal Snare Apparatus (Field Report)',
-    labelB: 'EXHIBIT B — Deployment Zone Context',
-    captionA: `Wire snare apparatus reported at ${ts} in ${alert.zone}. Location tagged for law enforcement retrieval and forensic analysis.`,
-    captionB: `Surrounding terrain of snare deployment. Proximity to plantation boundary indicates deliberate targeting.`,
-    stationA: `COMMUNITY-REPORT  |  Field Sighting  |  ${ts}`,
-    stationB: `GEO-TAG  |  Zone ${alert.zone}  |  Manual Entry`,
-    sensorModeA: 'COMMUNITY-INTELLIGENCE',
-    sensorModeB: 'GEO-REFERENCED',
-  };
+  if (sub === 'SNARE_DETECTED')
+    return {
+      labelA: 'EXHIBIT A — Illegal Snare Apparatus (Field Report)',
+      labelB: 'EXHIBIT B — Deployment Zone Context',
+      captionA: `Wire snare apparatus reported at ${ts} in ${alert.zone}. Location tagged for law enforcement retrieval and forensic analysis.`,
+      captionB: `Surrounding terrain of snare deployment. Proximity to plantation boundary indicates deliberate targeting.`,
+      stationA: `COMMUNITY-REPORT  |  Field Sighting  |  ${ts}`,
+      stationB: `GEO-TAG  |  Zone ${alert.zone}  |  Manual Entry`,
+      sensorModeA: 'COMMUNITY-INTELLIGENCE',
+      sensorModeB: 'GEO-REFERENCED',
+    };
 
-  if (sub === 'POACHER_CAMP') return {
-    labelA: 'EXHIBIT A — Illegal Encampment Site (Field Documentation)',
-    labelB: 'EXHIBIT B — Zone Approach Corridor',
-    captionA: `Evidence of illegal encampment discovered at ${ts} in ${alert.zone}. Remains suggest overnight occupation by 2–4 individuals.`,
-    captionB: `Approach corridor to camp location. Foot trail evident; consistent with repeated access over multiple days.`,
-    stationA: `COMMUNITY-REPORT  |  Ground Survey  |  ${ts}`,
-    stationB: `GEO-TAG  |  Zone ${alert.zone}  |  Approach Vector`,
-    sensorModeA: 'COMMUNITY-INTELLIGENCE',
-    sensorModeB: 'GEO-REFERENCED',
-  };
+  if (sub === 'POACHER_CAMP')
+    return {
+      labelA: 'EXHIBIT A — Illegal Encampment Site (Field Documentation)',
+      labelB: 'EXHIBIT B — Zone Approach Corridor',
+      captionA: `Evidence of illegal encampment discovered at ${ts} in ${alert.zone}. Remains suggest overnight occupation by 2–4 individuals.`,
+      captionB: `Approach corridor to camp location. Foot trail evident; consistent with repeated access over multiple days.`,
+      stationA: `COMMUNITY-REPORT  |  Ground Survey  |  ${ts}`,
+      stationB: `GEO-TAG  |  Zone ${alert.zone}  |  Approach Vector`,
+      sensorModeA: 'COMMUNITY-INTELLIGENCE',
+      sensorModeB: 'GEO-REFERENCED',
+    };
 
-  if (sub === 'CONFIRMED_THREAT_EXTREME') return {
-    labelA: 'EXHIBIT A — Multi-Sensor Correlation Frame',
-    labelB: 'EXHIBIT B — Threat Convergence Zone Documentation',
-    captionA: `CRITICAL: Triple-sensor correlation confirmed at ${ts}. Acoustic, camera, and intelligence sources triangulated to ${alert.zone}.`,
-    captionB: `Zone ${alert.zone} perimeter documentation captured at time of incident escalation. Full tactical response initiated.`,
-    stationA: `VCE-CORRELATED  |  Multi-Source  |  CRITICAL`,
-    stationB: `CAM-${z}-PERIMETER  |  Zone Boundary  |  NIGHT-IR`,
-    sensorModeA: 'MULTI-SENSOR-FUSION',
-    sensorModeB: 'NIGHT-IR',
-  };
+  if (sub === 'CONFIRMED_THREAT_EXTREME')
+    return {
+      labelA: 'EXHIBIT A — Multi-Sensor Correlation Frame',
+      labelB: 'EXHIBIT B — Threat Convergence Zone Documentation',
+      captionA: `CRITICAL: Triple-sensor correlation confirmed at ${ts}. Acoustic, camera, and intelligence sources triangulated to ${alert.zone}.`,
+      captionB: `Zone ${alert.zone} perimeter documentation captured at time of incident escalation. Full tactical response initiated.`,
+      stationA: `VCE-CORRELATED  |  Multi-Source  |  CRITICAL`,
+      stationB: `CAM-${z}-PERIMETER  |  Zone Boundary  |  NIGHT-IR`,
+      sensorModeA: 'MULTI-SENSOR-FUSION',
+      sensorModeB: 'NIGHT-IR',
+    };
 
-  if (type === 'CAMERA') return {
-    labelA: 'EXHIBIT A — Camera Detection Frame',
-    labelB: 'EXHIBIT B — Secondary Sensor Capture',
-    captionA: `Visual detection event triggered at ${ts} in ${alert.zone}. ${alert.description}`,
-    captionB: `Secondary camera frame from adjacent sensor station during detection window.`,
-    stationA: `CT-${z}-07  |  Camera Trap  |  AUTO`,
-    stationB: `CAM-${z}-09  |  Secondary Camera  |  NIGHT-IR`,
-    sensorModeA: 'VISIBLE / IR',
-    sensorModeB: 'NIGHT-IR',
-  };
+  if (type === 'CAMERA')
+    return {
+      labelA: 'EXHIBIT A — Camera Detection Frame',
+      labelB: 'EXHIBIT B — Secondary Sensor Capture',
+      captionA: `Visual detection event triggered at ${ts} in ${alert.zone}. ${alert.description}`,
+      captionB: `Secondary camera frame from adjacent sensor station during detection window.`,
+      stationA: `CT-${z}-07  |  Camera Trap  |  AUTO`,
+      stationB: `CAM-${z}-09  |  Secondary Camera  |  NIGHT-IR`,
+      sensorModeA: 'VISIBLE / IR',
+      sensorModeB: 'NIGHT-IR',
+    };
 
   // Generic fallback
   return {
@@ -269,15 +277,15 @@ function buildIncidentNarrative(alert: AlertEvent, _ownerName: string, estateNam
 
 // ─── PDF colour tokens ────────────────────────────────────────────────────────
 const C = {
-  black:     [10,  15,  26],
-  charcoal:  [30,  40,  60],
-  darkGray:  [60,  70,  90],
-  gray:      [120, 130, 150],
+  black: [10, 15, 26],
+  charcoal: [30, 40, 60],
+  darkGray: [60, 70, 90],
+  gray: [120, 130, 150],
   lightGray: [200, 205, 215],
-  white:     [255, 255, 255],
-  green:     [34,  197, 94],
-  amber:     [245, 158, 11],
-  red:       [239, 68,  68],
+  white: [255, 255, 255],
+  green: [34, 197, 94],
+  amber: [245, 158, 11],
+  red: [239, 68, 68],
 } as const;
 
 type RGB = readonly [number, number, number];
@@ -315,12 +323,28 @@ export async function generateEvidenceReport(opts: {
   const { alert, recentAlerts, ownerName, estateName, legalProfile, inventory } = opts;
 
   const now = new Date();
-  const reportId = `VGD-${now.getFullYear()}${String(now.getMonth()+1).padStart(2,'0')}${String(now.getDate()).padStart(2,'0')}-`;
-  const dateStr = now.toLocaleDateString('en-IN', { day: '2-digit', month: 'long', year: 'numeric' });
-  const timeStr = now.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
+  const reportId = `VGD-${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}-`;
+  const dateStr = now.toLocaleDateString('en-IN', {
+    day: '2-digit',
+    month: 'long',
+    year: 'numeric',
+  });
+  const timeStr = now.toLocaleTimeString('en-IN', {
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hour12: false,
+  });
 
   const canonicalContent = JSON.stringify({
-    alert: { id: alert.id, type: alert.type, zone: alert.zone, priority: alert.priority, description: alert.description, timestamp: alert.timestamp },
+    alert: {
+      id: alert.id,
+      type: alert.type,
+      zone: alert.zone,
+      priority: alert.priority,
+      description: alert.description,
+      timestamp: alert.timestamp,
+    },
     owner: ownerName,
     estate: estateName,
     district: legalProfile.district,
@@ -341,14 +365,12 @@ export async function generateEvidenceReport(opts: {
   const exhibitMeta = getExhibitMeta(alert);
   const incidentNarrative = buildIncidentNarrative(alert, ownerName, estateName);
 
-  const zoneInventory = inventory.filter(
-    i => i.zone.toLowerCase() === alert.zone?.toLowerCase()
-  );
+  const zoneInventory = inventory.filter((i) => i.zone.toLowerCase() === alert.zone?.toLowerCase());
   const totalExposure = zoneInventory.reduce((sum, i) => sum + i.count * i.valuePerTree, 0);
   const estateTotal = inventory.reduce((sum, i) => sum + i.count * i.valuePerTree, 0);
 
   const timeline = recentAlerts
-    .filter(a => a.zone === alert.zone)
+    .filter((a) => a.zone === alert.zone)
     .slice(-6)
     .reverse();
 
@@ -393,11 +415,13 @@ export async function generateEvidenceReport(opts: {
   y = sectionHeading(doc, 'Chain of Custody — Landowner Details', y, margin);
 
   const fields: [string, string][] = [
-    ['Estate Name',      estateName],
+    ['Estate Name', estateName],
     ['Registered Owner', ownerName],
-    ['District',         legalProfile.district || '—'],
-    ['State',            legalProfile.state || '—'],
-    ...(legalProfile.surveyNumber ? [['Survey / Plot No.', legalProfile.surveyNumber] as [string, string]] : []),
+    ['District', legalProfile.district || '—'],
+    ['State', legalProfile.state || '—'],
+    ...(legalProfile.surveyNumber
+      ? [['Survey / Plot No.', legalProfile.surveyNumber] as [string, string]]
+      : []),
   ];
 
   fields.forEach(([label, value]) => {
@@ -417,12 +441,18 @@ export async function generateEvidenceReport(opts: {
   y = sectionHeading(doc, 'Incident Details', y, margin);
 
   const incidentFields: [string, string][] = [
-    ['Incident ID',       alert.id.slice(0, 18).toUpperCase()],
-    ['Detection Type',    `${alert.type}${alert.subType ? ' — ' + alert.subType.replace(/_/g, ' ') : ''}`],
-    ['Plantation Zone',   alert.zone || 'Unknown'],
-    ['Confidence Level',  alert.confidence != null ? `${Math.round(alert.confidence * 100)}%` : 'N/A'],
-    ['Priority Level',    alert.priority],
-    ['Event Timestamp',   alert.timestamp],
+    ['Incident ID', alert.id.slice(0, 18).toUpperCase()],
+    [
+      'Detection Type',
+      `${alert.type}${alert.subType ? ' — ' + alert.subType.replace(/_/g, ' ') : ''}`,
+    ],
+    ['Plantation Zone', alert.zone || 'Unknown'],
+    [
+      'Confidence Level',
+      alert.confidence != null ? `${Math.round(alert.confidence * 100)}%` : 'N/A',
+    ],
+    ['Priority Level', alert.priority],
+    ['Event Timestamp', alert.timestamp],
     ['Sensor Description', alert.description],
   ];
 
@@ -471,7 +501,10 @@ export async function generateEvidenceReport(opts: {
       doc.text(evt.timestamp, margin + 5, y);
       doc.setFont('helvetica', 'normal');
       doc.setTextColor(...C.black);
-      const lines = doc.splitTextToSize(`[${evt.type}${evt.subType ? ' / ' + evt.subType.replace(/_/g, ' ') : ''}] ${evt.description}`, contentW - 30);
+      const lines = doc.splitTextToSize(
+        `[${evt.type}${evt.subType ? ' / ' + evt.subType.replace(/_/g, ' ') : ''}] ${evt.description}`,
+        contentW - 30
+      );
       doc.text(lines, margin + 37, y);
       y += lines.length * 4.5 + (i < timeline.length - 1 ? 1 : 0);
     });
@@ -516,7 +549,11 @@ export async function generateEvidenceReport(opts: {
   doc.setFont('courier', 'normal');
   doc.setFontSize(6.5);
   doc.setTextColor(...C.gray);
-  doc.text(`${exhibitMeta.stationA}  |  ${exhibitMeta.sensorModeA}  |  ${alert.timestamp}`, margin, y);
+  doc.text(
+    `${exhibitMeta.stationA}  |  ${exhibitMeta.sensorModeA}  |  ${alert.timestamp}`,
+    margin,
+    y
+  );
   const capALines = doc.splitTextToSize(exhibitMeta.captionA, contentW * 0.7);
   y += 4;
   doc.setFont('helvetica', 'normal');
@@ -548,7 +585,11 @@ export async function generateEvidenceReport(opts: {
   doc.setFont('courier', 'normal');
   doc.setFontSize(6.5);
   doc.setTextColor(...C.gray);
-  doc.text(`${exhibitMeta.stationB}  |  ${exhibitMeta.sensorModeB}  |  ${alert.timestamp}`, margin, y);
+  doc.text(
+    `${exhibitMeta.stationB}  |  ${exhibitMeta.sensorModeB}  |  ${alert.timestamp}`,
+    margin,
+    y
+  );
   const capBLines = doc.splitTextToSize(exhibitMeta.captionB, contentW * 0.7);
   y += 4;
   doc.setFont('helvetica', 'normal');
@@ -564,7 +605,11 @@ export async function generateEvidenceReport(opts: {
     doc.setFont('helvetica', 'italic');
     doc.setFontSize(7.5);
     doc.setTextColor(...C.gray);
-    doc.text('No tree inventory registered for this zone. Add inventory in Estate Intelligence.', margin, y);
+    doc.text(
+      'No tree inventory registered for this zone. Add inventory in Estate Intelligence.',
+      margin,
+      y
+    );
     y += 7;
   } else {
     const cols = [margin, margin + 35, margin + 70, margin + 100, margin + 135];
@@ -602,13 +647,19 @@ export async function generateEvidenceReport(opts: {
     doc.setFontSize(8);
     doc.setTextColor(...C.white);
     doc.text('TOTAL EXPOSURE — AFFECTED ZONE', margin + 1, y + 4);
-    doc.text(`₹${totalExposure.toLocaleString('en-IN')}`, margin + contentW - 1, y + 4, { align: 'right' });
+    doc.text(`₹${totalExposure.toLocaleString('en-IN')}`, margin + contentW - 1, y + 4, {
+      align: 'right',
+    });
     y += 12;
 
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(7);
     doc.setTextColor(...C.gray);
-    doc.text(`Total estate value across all zones: ₹${estateTotal.toLocaleString('en-IN')}`, margin, y);
+    doc.text(
+      `Total estate value across all zones: ₹${estateTotal.toLocaleString('en-IN')}`,
+      margin,
+      y
+    );
     y += 9;
   }
 
@@ -671,7 +722,12 @@ export async function generateEvidenceReport(opts: {
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(6.5);
   doc.setTextColor(...C.gray);
-  const footer = 'This document was generated automatically by the Vanguard Estate Security Platform. Report ID: ' + shortId + '. Generated: ' + dateStr + '.';
+  const footer =
+    'This document was generated automatically by the Vanguard Estate Security Platform. Report ID: ' +
+    shortId +
+    '. Generated: ' +
+    dateStr +
+    '.';
   const footerLines = doc.splitTextToSize(footer, contentW);
   doc.text(footerLines, margin, y);
 

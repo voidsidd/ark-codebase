@@ -35,11 +35,7 @@ export function useAuth() {
   // Fetch profile from profiles table
   const fetchProfile = useCallback(async (userId: string): Promise<Profile | null> => {
     try {
-      const { data } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', userId)
-        .single();
+      const { data } = await supabase.from('profiles').select('*').eq('id', userId).single();
       return data as Profile | null;
     } catch {
       return null;
@@ -76,36 +72,42 @@ export function useAuth() {
     }, SESSION_TIMEOUT_MS);
 
     // Get initial session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      applySession(session);
-    }).catch(() => {
-      applySession(null);
-    });
+    supabase.auth
+      .getSession()
+      .then(({ data: { session } }) => {
+        applySession(session);
+      })
+      .catch(() => {
+        applySession(null);
+      });
 
     // Listen for auth state changes (covers token refresh, sign in/out, etc.)
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (_event, session) => {
-        applySession(session);
-      }
-    );
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      applySession(session);
+    });
 
     // ── Visibility change: re-check session when tab becomes active again ──
     // This is the key fix for the "idle timeout → stuck on Authenticating" bug
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'visible') {
-        supabase.auth.getSession().then(({ data: { session } }) => {
-          // Only update if the session state actually changed
-          setState(prev => {
-            const prevId = prev.session?.access_token;
-            const nextId = session?.access_token;
-            if (prevId === nextId) return prev; // no change, no re-render
-            return { ...prev, loading: false };
-          });
-          // Refresh token if session exists but might be stale
-          if (session) {
-            supabase.auth.refreshSession().catch(() => {});
-          }
-        }).catch(() => {});
+        supabase.auth
+          .getSession()
+          .then(({ data: { session } }) => {
+            // Only update if the session state actually changed
+            setState((prev) => {
+              const prevId = prev.session?.access_token;
+              const nextId = session?.access_token;
+              if (prevId === nextId) return prev; // no change, no re-render
+              return { ...prev, loading: false };
+            });
+            // Refresh token if session exists but might be stale
+            if (session) {
+              supabase.auth.refreshSession().catch(() => {});
+            }
+          })
+          .catch(() => {});
       }
     };
 

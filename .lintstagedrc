@@ -1,0 +1,8 @@
+{
+  "frontend/**/*.{ts,tsx,js,jsx,css,json}": [
+    "npx prettier --write"
+  ],
+  "backend/**/*.{js,json}": [
+    "npx prettier --write"
+  ]
+}

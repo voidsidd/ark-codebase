@@ -10,6 +10,8 @@ from ultralytics import YOLO
 from anthropic import Anthropic
 from dotenv import load_dotenv
 
+from ai_engine.gmm_frame_gate import GmmBackgroundGate, GateResult
+
 load_dotenv()
 
 @dataclass
@@ -19,23 +21,12 @@ class DetectionMeta:
     timestamp: datetime
     camera_type: str = 'rgb'
 
-class MotionFilter:
-    def __init__(self, camera_type='rgb'):
-        if camera_type == 'thermal':
-            self.subtractor = cv2.createBackgroundSubtractorKNN(history=500, dist2Threshold=400, detectShadows=False)
-        else:
-            self.subtractor = cv2.createBackgroundSubtractorMOG2(history=500, varThreshold=50, detectShadows=True)
-        self.min_area = 800
+
+class MotionFilter(GmmBackgroundGate):
+    """Backward-compatible: same GMM/MOG2 gate with legacy ``has_motion`` API."""
 
     def has_motion(self, frame) -> bool:
-        if frame is None: return False
-        gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-        fg_mask = self.subtractor.apply(gray)
-        _, fg_mask = cv2.threshold(fg_mask, 200, 255, cv2.THRESH_BINARY)
-        kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (5, 5))
-        fg_mask = cv2.morphologyEx(fg_mask, cv2.MORPH_OPEN, kernel)
-        contours, _ = cv2.findContours(fg_mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-        return any(cv2.contourArea(c) > self.min_area for c in contours)
+        return self.evaluate(frame).passed
 
 class ThreatDetector:
     THREAT_CLASSES = {'person', 'car', 'truck', 'motorcycle', 'backpack', 'handbag', 'knife'}
@@ -90,14 +81,29 @@ class VisionVerifier:
         except: return {"error": "Verifier failed"}
 
 class HendricksEngine:
+    """
+    Per-frame pipeline (cheap -> expensive):
+
+    1. ``GmmBackgroundGate`` — per-pixel mixture-of-Gaussians (MOG2) / KNN thermal:
+       drop static frames before GPU-heavy detection.
+    2. ``ThreatDetector`` — YOLO on remaining frames.
+    3. ``SuspicionEngine`` — rule layer on detections.
+    4. ``VisionVerifier`` — optional VLM only for selected threat levels.
+    """
+
     def __init__(self):
-        self.motion = MotionFilter()
+        self.gate = GmmBackgroundGate(camera_type="rgb")
+        self.motion = self.gate  # alias for tests / legacy attribute name
         self.detector = ThreatDetector()
         self.rules = SuspicionEngine()
         self.verifier = VisionVerifier()
+
     async def process_frame(self, frame, meta: DetectionMeta):
-        if frame is None: return None
-        if not self.motion.has_motion(frame): return None
+        if frame is None:
+            return None
+        gate_result: GateResult = self.gate.evaluate(frame)
+        if not gate_result.passed:
+            return None
         detections = self.detector.detect(frame)
         if not detections: return None
         assessment = self.rules.evaluate(detections, meta)

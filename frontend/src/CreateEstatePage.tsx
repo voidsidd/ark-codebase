@@ -157,7 +157,9 @@ function DrawController({
         // startDraw — called by toolbar button
         const startDraw = () => {
           if (handlerRef.current) {
-            try { handlerRef.current.disable(); } catch {}
+            try {
+              handlerRef.current.disable();
+            } catch {}
           }
           const h = createHandler();
           handlerRef.current = h;
@@ -167,7 +169,9 @@ function DrawController({
         // clearDraw
         const clearDraw = () => {
           if (handlerRef.current) {
-            try { handlerRef.current.disable(); } catch {}
+            try {
+              handlerRef.current.disable();
+            } catch {}
           }
           drawnItems.clearLayers();
           onPolygonChange(null);
@@ -180,7 +184,9 @@ function DrawController({
             drawnItems.removeLayer(layers[layers.length - 1]);
             const remaining = drawnItems.getLayers();
             if (remaining.length > 0) {
-              const latlngs = (remaining[remaining.length - 1] as any).getLatLngs()[0] as L.LatLng[];
+              const latlngs = (
+                remaining[remaining.length - 1] as any
+              ).getLatLngs()[0] as L.LatLng[];
               const coords: LatLng[] = latlngs.map((ll: L.LatLng) => [ll.lat, ll.lng]);
               onPolygonChange(coords);
               historyRef.current = [...historyRef.current, coords];
@@ -197,7 +203,10 @@ function DrawController({
         if (initialPolygon && initialPolygon.length > 0) {
           const latlngs = initialPolygon.map(([lat, lng]) => L.latLng(lat, lng));
           const poly = (L as any).polygon(latlngs, {
-             color: '#00ffcc', weight: 2, fillColor: '#00ffcc', fillOpacity: 0.15
+            color: '#00ffcc',
+            weight: 2,
+            fillColor: '#00ffcc',
+            fillOpacity: 0.15,
           });
           drawnItems.addLayer(poly);
           map.fitBounds(poly.getBounds());
@@ -237,15 +246,21 @@ function DrawController({
 
     return () => {
       if (controlRef.current) {
-        try { map.removeControl(controlRef.current); } catch {}
+        try {
+          map.removeControl(controlRef.current);
+        } catch {}
         controlRef.current = null;
       }
       if (drawnRef.current) {
-        try { map.removeLayer(drawnRef.current); } catch {}
+        try {
+          map.removeLayer(drawnRef.current);
+        } catch {}
         drawnRef.current = null;
       }
       if (handlerRef.current) {
-        try { handlerRef.current.disable(); } catch {}
+        try {
+          handlerRef.current.disable();
+        } catch {}
         handlerRef.current = null;
       }
     };
@@ -274,7 +289,9 @@ export default function CreateEstatePage() {
   const [error, setError] = useState<string | null>(null);
   const [isDrawing, setIsDrawing] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  const [searchSuggestions, setSearchSuggestions] = useState<{ display_name: string; lat: string; lon: string }[]>([]);
+  const [searchSuggestions, setSearchSuggestions] = useState<
+    { display_name: string; lat: string; lon: string }[]
+  >([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [searchLoading, setSearchLoading] = useState(false);
   // Measurement state — manual click-based approach
@@ -307,14 +324,18 @@ export default function CreateEstatePage() {
     let isMounted = true;
     const fetchEstateForEdit = async () => {
       try {
-        const { data, error } = await supabase.from('estates').select('*').eq('id', editId).single();
+        const { data, error } = await supabase
+          .from('estates')
+          .select('*')
+          .eq('id', editId)
+          .single();
         if (error) throw error;
         if (data && isMounted) {
           setName(data.name || '');
           if (data.boundary && data.boundary.coordinates && data.boundary.coordinates[0]) {
             const rawCoords = data.boundary.coordinates[0];
             const coords: LatLng[] = rawCoords.map((pt: number[]) => [pt[1], pt[0]] as LatLng);
-            
+
             // Remove the exact closure vertex for Leaflet drawing state
             if (
               coords.length > 3 &&
@@ -335,7 +356,9 @@ export default function CreateEstatePage() {
       }
     };
     fetchEstateForEdit();
-    return () => { isMounted = false; };
+    return () => {
+      isMounted = false;
+    };
   }, [editId]);
 
   // ── Polygon change ────────────────────────────────────────────────────────
@@ -363,9 +386,7 @@ export default function CreateEstatePage() {
     if (pts.length >= 2) {
       let dist = 0;
       for (let i = 1; i < pts.length; i++) dist += pts[i - 1].distanceTo(pts[i]);
-      const label = dist > 1000
-        ? `${(dist / 1000).toFixed(2)} km`
-        : `${Math.round(dist)} m`;
+      const label = dist > 1000 ? `${(dist / 1000).toFixed(2)} km` : `${Math.round(dist)} m`;
       setMeasureToast(`Distance: ${label}`);
       setTimeout(() => setMeasureToast(null), 6000);
     }
@@ -391,7 +412,10 @@ export default function CreateEstatePage() {
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
-        if (measureActive) { measurePointsRef.current = []; finishMeasure(); }
+        if (measureActive) {
+          measurePointsRef.current = [];
+          finishMeasure();
+        }
         if (placemarkMode) setPlacemarkMode(false);
       }
     };
@@ -400,13 +424,10 @@ export default function CreateEstatePage() {
   }, [measureActive, placemarkMode, finishMeasure]);
 
   // ── Draw ready callback ───────────────────────────────────────────────────
-  const handleDrawReady = useCallback(
-    (startDraw: () => void, clearDraw: () => void) => {
-      startDrawRef.current = startDraw;
-      clearDrawRef.current = clearDraw;
-    },
-    []
-  );
+  const handleDrawReady = useCallback((startDraw: () => void, clearDraw: () => void) => {
+    startDrawRef.current = startDraw;
+    clearDrawRef.current = clearDraw;
+  }, []);
 
   const handleUndoReady = useCallback((undo: () => void) => {
     undoRef.current = undo;
@@ -417,7 +438,10 @@ export default function CreateEstatePage() {
     if (viewMode !== '2d') setViewMode('2d');
     // Cancel any active tools that intercept map clicks
     setPlacemarkMode(false);
-    if (measureActive) { measurePointsRef.current = []; finishMeasure(); }
+    if (measureActive) {
+      measurePointsRef.current = [];
+      finishMeasure();
+    }
     setIsDrawing(true);
     setTimeout(() => startDrawRef.current?.(), 100);
   };
@@ -433,7 +457,7 @@ export default function CreateEstatePage() {
   // ── Placemark mode — toggle click-to-place mode ────────────────────────────
   const handlePlacemark = () => {
     // Toggle placemark placement mode
-    setPlacemarkMode(prev => !prev);
+    setPlacemarkMode((prev) => !prev);
     // Cancel any active measure
     if (measureActive) finishMeasure();
   };
@@ -452,7 +476,7 @@ export default function CreateEstatePage() {
     const clickHandler = (e: L.LeafletMouseEvent) => {
       measurePointsRef.current = [...measurePointsRef.current, e.latlng];
       const pts = measurePointsRef.current;
-      
+
       if (measureLayerRef.current) map.removeLayer(measureLayerRef.current);
       if (measureStartMarkerRef.current) map.removeLayer(measureStartMarkerRef.current);
       if (measureEndMarkerRef.current) map.removeLayer(measureEndMarkerRef.current);
@@ -467,14 +491,21 @@ export default function CreateEstatePage() {
       }
 
       if (pts.length > 0) {
-        const createDot = () => L.divIcon({
-          className: '',
-          html: `<div style="width:8px;height:8px;background:#facc15;border-radius:50%;box-shadow:0 0 12px 4px #facc15aa, 0 0 4px #fff"></div>`,
-          iconAnchor: [4, 4]
-        });
-        measureStartMarkerRef.current = L.marker(pts[0], { icon: createDot(), interactive: false }).addTo(map);
+        const createDot = () =>
+          L.divIcon({
+            className: '',
+            html: `<div style="width:8px;height:8px;background:#facc15;border-radius:50%;box-shadow:0 0 12px 4px #facc15aa, 0 0 4px #fff"></div>`,
+            iconAnchor: [4, 4],
+          });
+        measureStartMarkerRef.current = L.marker(pts[0], {
+          icon: createDot(),
+          interactive: false,
+        }).addTo(map);
         if (pts.length > 1) {
-          measureEndMarkerRef.current = L.marker(pts[pts.length - 1], { icon: createDot(), interactive: false }).addTo(map);
+          measureEndMarkerRef.current = L.marker(pts[pts.length - 1], {
+            icon: createDot(),
+            interactive: false,
+          }).addTo(map);
         }
       }
     };
@@ -491,7 +522,11 @@ export default function CreateEstatePage() {
     map.on('dblclick', dblClickHandler);
   };
 
-  const handleSearch = async (e: React.FormEvent | null, overrideLat?: number, overrideLon?: number) => {
+  const handleSearch = async (
+    e: React.FormEvent | null,
+    overrideLat?: number,
+    overrideLon?: number
+  ) => {
     if (e) e.preventDefault();
 
     let lat: number;
@@ -550,17 +585,20 @@ export default function CreateEstatePage() {
 
   // ── Compute PostGIS stats ──────────────────────────────────────────────────
   useEffect(() => {
-    if (!polygonCoords || polygonCoords.length < 3) { setStats(null); return; }
-    
+    if (!polygonCoords || polygonCoords.length < 3) {
+      setStats(null);
+      return;
+    }
+
     let isMounted = true;
     const fetchStats = async () => {
       try {
         const ring = polygonCoords.map(([lat, lon]) => [lon, lat] as [number, number]);
         ring.push(ring[0]);
-        
+
         const geojson = {
           type: 'Polygon',
-          coordinates: [ring]
+          coordinates: [ring],
         };
 
         const { data, error } = await supabase.rpc('analyze_estate_polygon', { geojson });
@@ -586,7 +624,9 @@ export default function CreateEstatePage() {
     };
 
     fetchStats();
-    return () => { isMounted = false; };
+    return () => {
+      isMounted = false;
+    };
   }, [polygonCoords]);
 
   // ── Cesium init on 3D switch ──────────────────────────────────────────────
@@ -635,15 +675,19 @@ export default function CreateEstatePage() {
     if (viewer.scene.fog) viewer.scene.fog.enabled = false;
 
     // Bing satellite imagery (same as estate dashboards via Ion asset 2)
-    IonImageryProvider.fromAssetId(2).then(provider => {
-      if (!viewer.isDestroyed()) {
-        viewer.imageryLayers.removeAll();
-        viewer.imageryLayers.addImageryProvider(provider);
-      }
-    }).catch(() => {});
+    IonImageryProvider.fromAssetId(2)
+      .then((provider) => {
+        if (!viewer.isDestroyed()) {
+          viewer.imageryLayers.removeAll();
+          viewer.imageryLayers.addImageryProvider(provider);
+        }
+      })
+      .catch(() => {});
 
     createWorldTerrainAsync()
-      .then(tp => { if (!viewer.isDestroyed()) viewer.terrainProvider = tp; })
+      .then((tp) => {
+        if (!viewer.isDestroyed()) viewer.terrainProvider = tp;
+      })
       .catch(() => {});
 
     const ctrl = viewer.scene.screenSpaceCameraController;
@@ -665,7 +709,10 @@ export default function CreateEstatePage() {
   }, [polygonCoords, viewMode]);
 
   function syncCesiumPolygon(viewer: Viewer) {
-    if (entityRef.current) { viewer.entities.remove(entityRef.current); entityRef.current = null; }
+    if (entityRef.current) {
+      viewer.entities.remove(entityRef.current);
+      entityRef.current = null;
+    }
 
     if (!polygonCoords || polygonCoords.length < 3) {
       viewer.camera.setView({
@@ -702,12 +749,27 @@ export default function CreateEstatePage() {
 
   const handleSave = useCallback(async () => {
     setError(null);
-    if (!name.trim()) { setError('Estate name is required'); return; }
-    if (!polygonCoords || polygonCoords.length < 3) { setError('Draw a boundary first'); return; }
-    if (!stats) { setError('No valid polygon computed'); return; }
-    if (!user) { setError('Not authenticated'); return; }
+    if (!name.trim()) {
+      setError('Estate name is required');
+      return;
+    }
+    if (!polygonCoords || polygonCoords.length < 3) {
+      setError('Draw a boundary first');
+      return;
+    }
+    if (!stats) {
+      setError('No valid polygon computed');
+      return;
+    }
+    if (!user) {
+      setError('Not authenticated');
+      return;
+    }
     const geojson = toGeoJSON();
-    if (!geojson) { setError('Invalid polygon geometry'); return; }
+    if (!geojson) {
+      setError('Invalid polygon geometry');
+      return;
+    }
 
     setSaving(true);
     try {
@@ -726,7 +788,8 @@ export default function CreateEstatePage() {
         if (estateErr) throw estateErr;
 
         // Update the Boundary zone too
-        await supabase.from('zones')
+        await supabase
+          .from('zones')
           .update({ polygon: geojson })
           .eq('estate_id', editId)
           .eq('name', 'Boundary');
@@ -775,17 +838,24 @@ export default function CreateEstatePage() {
   // ── Render ────────────────────────────────────────────────────────────────
   return (
     <div className="h-screen w-screen flex flex-col bg-[#1a1a1a] text-white overflow-hidden">
-
       {/* ══ Google Earth–style Top Toolbar ════════════════════════════════ */}
       <div className="flex items-center gap-2 px-3 py-2 bg-[#202124] border-b border-[#3c3c3c] shrink-0 z-[2000] overflow-visible">
-
         {/* Logo / back button */}
         <button
           onClick={() => navigate('/dashboard')}
           title="Back to Dashboard"
           className="flex items-center justify-center w-8 h-8 rounded-full bg-vanguard-species/20 hover:bg-vanguard-species/40 transition-colors cursor-pointer shrink-0"
         >
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#00ffcc" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+          <svg
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="#00ffcc"
+            strokeWidth="2.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
             <polyline points="15 18 9 12 15 6" />
           </svg>
         </button>
@@ -793,18 +863,40 @@ export default function CreateEstatePage() {
         {/* Search bar with suggestions */}
         <form onSubmit={(e) => handleSearch(e)} className="relative flex items-center">
           {searchLoading ? (
-            <svg className="absolute left-3 text-vanguard-species/70 animate-spin" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <svg
+              className="absolute left-3 text-vanguard-species/70 animate-spin"
+              width="14"
+              height="14"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+            >
               <circle cx="12" cy="12" r="10" strokeDasharray="60" strokeDashoffset="20" />
             </svg>
           ) : (
-            <svg className="absolute left-3 text-white/40" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
+            <svg
+              className="absolute left-3 text-white/40"
+              width="14"
+              height="14"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <circle cx="11" cy="11" r="8" />
+              <line x1="21" y1="21" x2="16.65" y2="16.65" />
             </svg>
           )}
           <input
             type="text"
             value={searchQuery}
-            onChange={e => { setSearchQuery(e.target.value); setShowSuggestions(false); }}
+            onChange={(e) => {
+              setSearchQuery(e.target.value);
+              setShowSuggestions(false);
+            }}
             onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
             placeholder="Search location..."
             className="w-60 pl-8 pr-3 py-1.5 bg-[#303134] text-white text-sm rounded-full placeholder:text-white/40 focus:outline-none focus:ring-1 focus:ring-vanguard-species/60 font-mono"
@@ -835,8 +927,18 @@ export default function CreateEstatePage() {
           onClick={handleUndo}
           disabled={!polygonCoords}
           icon={
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <polyline points="9 14 4 9 9 4" /><path d="M20 20v-7a4 4 0 0 0-4-4H4" />
+            <svg
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <polyline points="9 14 4 9 9 4" />
+              <path d="M20 20v-7a4 4 0 0 0-4-4H4" />
             </svg>
           }
         />
@@ -847,8 +949,18 @@ export default function CreateEstatePage() {
           onClick={() => {}}
           disabled={true}
           icon={
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <polyline points="15 14 20 9 15 4" /><path d="M4 20v-7a4 4 0 0 1 4-4h12" />
+            <svg
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <polyline points="15 14 20 9 15 4" />
+              <path d="M4 20v-7a4 4 0 0 1 4-4h12" />
             </svg>
           }
         />
@@ -862,7 +974,16 @@ export default function CreateEstatePage() {
           onClick={handlePlacemark}
           active={placemarkMode}
           icon={
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <svg
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
               <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
               <circle cx="12" cy="10" r="3" />
             </svg>
@@ -875,7 +996,16 @@ export default function CreateEstatePage() {
           onClick={handleStartPolygon}
           active={isDrawing}
           icon={
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <svg
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
               <polygon points="3,17 7,3 14,9 21,6 18,20" />
             </svg>
           }
@@ -887,8 +1017,20 @@ export default function CreateEstatePage() {
           onClick={handleMeasure}
           active={measureActive}
           icon={
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M3 17L21 17"/><path d="M3 7L21 7"/><path d="M9 3L9 21"/><path d="M15 3L15 21"/>
+            <svg
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <path d="M3 17L21 17" />
+              <path d="M3 7L21 7" />
+              <path d="M9 3L9 21" />
+              <path d="M15 3L15 21" />
             </svg>
           }
         />
@@ -900,8 +1042,18 @@ export default function CreateEstatePage() {
             onClick={handleClear}
             danger
             icon={
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <polyline points="3 6 5 6 21 6" /><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" />
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <polyline points="3 6 5 6 21 6" />
+                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" />
               </svg>
             }
           />
@@ -915,7 +1067,9 @@ export default function CreateEstatePage() {
           <button
             onClick={() => setViewMode('2d')}
             className={`px-4 py-1.5 text-xs font-mono tracking-wider transition-all cursor-pointer ${
-              viewMode === '2d' ? 'bg-vanguard-species/80 text-vanguard-bg font-bold' : 'text-white/60 hover:text-white/90'
+              viewMode === '2d'
+                ? 'bg-vanguard-species/80 text-vanguard-bg font-bold'
+                : 'text-white/60 hover:text-white/90'
             }`}
           >
             2D
@@ -923,7 +1077,9 @@ export default function CreateEstatePage() {
           <button
             onClick={() => setViewMode('3d')}
             className={`px-4 py-1.5 text-xs font-mono tracking-wider transition-all cursor-pointer ${
-              viewMode === '3d' ? 'bg-vanguard-species/80 text-vanguard-bg font-bold' : 'text-white/60 hover:text-white/90'
+              viewMode === '3d'
+                ? 'bg-vanguard-species/80 text-vanguard-bg font-bold'
+                : 'text-white/60 hover:text-white/90'
             }`}
           >
             3D
@@ -938,12 +1094,13 @@ export default function CreateEstatePage() {
 
       {/* ══ Main Content ══════════════════════════════════════════════════════ */}
       <div className="flex-1 flex overflow-hidden">
-
         {/* Map area */}
         <div className="flex-1 relative">
-
           {/* 2D Leaflet */}
-          <div className="absolute inset-0" style={{ display: viewMode === '2d' ? 'block' : 'none' }}>
+          <div
+            className="absolute inset-0"
+            style={{ display: viewMode === '2d' ? 'block' : 'none' }}
+          >
             {!initialLoading && (
               <MapContainer
                 center={[20, 78]}
@@ -951,7 +1108,10 @@ export default function CreateEstatePage() {
                 style={{ height: '100%', width: '100%' }}
                 zoomControl={false}
                 minZoom={3}
-                maxBounds={[[-90, -180], [90, 180]]}
+                maxBounds={[
+                  [-90, -180],
+                  [90, 180],
+                ]}
                 maxBoundsViscosity={1.0}
               >
                 <TileLayer
@@ -966,14 +1126,14 @@ export default function CreateEstatePage() {
                     onUndoReady={handleUndoReady}
                     initialPolygon={initialPolygon}
                   />
-                    {/* Captures Leaflet map instance so search + placemark work */}
+                  {/* Captures Leaflet map instance so search + placemark work */}
                   <LeafletMapCapture mapRef={leafletMapRef} />
 
                   {/* Click-to-place handler — only active in placemark mode */}
                   <PlacemarkClickHandler
                     active={placemarkMode}
                     onPlace={(lat, lng) => {
-                      setPlacemarks(prev => {
+                      setPlacemarks((prev) => {
                         const newPm: PlacemarkData = {
                           id: `pm-${Date.now()}`,
                           lat,
@@ -1014,64 +1174,121 @@ export default function CreateEstatePage() {
                       iconAnchor: [0, 28],
                     })}
                   >
-                    <Popup
-                      className="placemark-popup"
-                      closeButton={false}
-                      offset={[0, -30]}
-                    >
-                      <div style={{
-                        background: '#1a1f2e',
-                        border: '1px solid #00ffcc44',
-                        borderRadius: '6px',
-                        padding: '8px 10px',
-                        minWidth: '160px',
-                        fontFamily: 'monospace',
-                      }}>
+                    <Popup className="placemark-popup" closeButton={false} offset={[0, -30]}>
+                      <div
+                        style={{
+                          background: '#1a1f2e',
+                          border: '1px solid #00ffcc44',
+                          borderRadius: '6px',
+                          padding: '8px 10px',
+                          minWidth: '160px',
+                          fontFamily: 'monospace',
+                        }}
+                      >
                         {editingPlacemarkId === pm.id ? (
                           <div style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
                             <input
                               autoFocus
                               defaultValue={pm.name}
-                              onChange={e => setEditingPlacemarkName(e.target.value)}
-                              onKeyDown={e => {
+                              onChange={(e) => setEditingPlacemarkName(e.target.value)}
+                              onKeyDown={(e) => {
                                 if (e.key === 'Enter') {
-                                  setPlacemarks(prev => prev.map(p =>
-                                    p.id === pm.id ? { ...p, name: editingPlacemarkName || p.name } : p
-                                  ));
+                                  setPlacemarks((prev) =>
+                                    prev.map((p) =>
+                                      p.id === pm.id
+                                        ? { ...p, name: editingPlacemarkName || p.name }
+                                        : p
+                                    )
+                                  );
                                   setEditingPlacemarkId(null);
                                 }
                                 if (e.key === 'Escape') setEditingPlacemarkId(null);
                               }}
                               style={{
-                                flex: 1, background: '#0a0f1a', border: '1px solid #00ffcc55',
-                                borderRadius: '3px', padding: '3px 6px', color: '#00ffcc',
-                                fontSize: '11px', fontFamily: 'monospace', outline: 'none',
+                                flex: 1,
+                                background: '#0a0f1a',
+                                border: '1px solid #00ffcc55',
+                                borderRadius: '3px',
+                                padding: '3px 6px',
+                                color: '#00ffcc',
+                                fontSize: '11px',
+                                fontFamily: 'monospace',
+                                outline: 'none',
                               }}
                             />
                             <button
                               onClick={() => {
-                                setPlacemarks(prev => prev.map(p =>
-                                  p.id === pm.id ? { ...p, name: editingPlacemarkName || p.name } : p
-                                ));
+                                setPlacemarks((prev) =>
+                                  prev.map((p) =>
+                                    p.id === pm.id
+                                      ? { ...p, name: editingPlacemarkName || p.name }
+                                      : p
+                                  )
+                                );
                                 setEditingPlacemarkId(null);
                               }}
-                              style={{ background: '#00ffcc', border: 'none', borderRadius: '3px', padding: '3px 6px', cursor: 'pointer', color: '#0a0f1a', fontWeight: 700, fontSize: '10px' }}
-                            >✓</button>
+                              style={{
+                                background: '#00ffcc',
+                                border: 'none',
+                                borderRadius: '3px',
+                                padding: '3px 6px',
+                                cursor: 'pointer',
+                                color: '#0a0f1a',
+                                fontWeight: 700,
+                                fontSize: '10px',
+                              }}
+                            >
+                              ✓
+                            </button>
                           </div>
                         ) : (
-                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '8px' }}>
-                            <span style={{ color: '#00ffcc', fontSize: '11px', fontWeight: 700 }}>{pm.name}</span>
+                          <div
+                            style={{
+                              display: 'flex',
+                              justifyContent: 'space-between',
+                              alignItems: 'center',
+                              gap: '8px',
+                            }}
+                          >
+                            <span style={{ color: '#00ffcc', fontSize: '11px', fontWeight: 700 }}>
+                              {pm.name}
+                            </span>
                             <div style={{ display: 'flex', gap: '4px' }}>
                               <button
-                                onClick={() => { setEditingPlacemarkId(pm.id); setEditingPlacemarkName(pm.name); }}
+                                onClick={() => {
+                                  setEditingPlacemarkId(pm.id);
+                                  setEditingPlacemarkName(pm.name);
+                                }}
                                 title="Rename"
-                                style={{ background: 'transparent', border: '1px solid #3c3c3c', borderRadius: '3px', padding: '2px 5px', cursor: 'pointer', color: '#aaa', fontSize: '10px' }}
-                              >✎</button>
+                                style={{
+                                  background: 'transparent',
+                                  border: '1px solid #3c3c3c',
+                                  borderRadius: '3px',
+                                  padding: '2px 5px',
+                                  cursor: 'pointer',
+                                  color: '#aaa',
+                                  fontSize: '10px',
+                                }}
+                              >
+                                ✎
+                              </button>
                               <button
-                                onClick={() => setPlacemarks(prev => prev.filter(p => p.id !== pm.id))}
+                                onClick={() =>
+                                  setPlacemarks((prev) => prev.filter((p) => p.id !== pm.id))
+                                }
                                 title="Remove"
-                                style={{ background: 'transparent', border: '1px solid #ff4444aa', borderRadius: '3px', padding: '2px 5px', cursor: 'pointer', color: '#ff6666', fontSize: '10px' }}
-                              >✕</button>
+                                style={{
+                                  background: 'transparent',
+                                  border: '1px solid #ff4444aa',
+                                  borderRadius: '3px',
+                                  padding: '2px 5px',
+                                  cursor: 'pointer',
+                                  color: '#ff6666',
+                                  fontSize: '10px',
+                                }}
+                              >
+                                ✕
+                              </button>
                             </div>
                           </div>
                         )}
@@ -1082,7 +1299,6 @@ export default function CreateEstatePage() {
                     </Popup>
                   </Marker>
                 ))}
-
               </MapContainer>
             )}
 
@@ -1103,7 +1319,8 @@ export default function CreateEstatePage() {
           {viewMode === '2d' && !polygonCoords && !isDrawing && (
             <div className="absolute bottom-6 left-1/2 -translate-x-1/2 px-4 py-2 bg-[#202124]/90 backdrop-blur border border-[#3c3c3c] rounded-full z-[1000] pointer-events-none">
               <p className="font-mono text-[10px] text-white/50 tracking-wide whitespace-nowrap">
-                CLICK <span className="text-vanguard-species">▣ DRAW BOUNDARY</span> IN THE TOOLBAR TO START
+                CLICK <span className="text-vanguard-species">▣ DRAW BOUNDARY</span> IN THE TOOLBAR
+                TO START
               </p>
             </div>
           )}
@@ -1139,7 +1356,10 @@ export default function CreateEstatePage() {
                 FINISH
               </button>
               <button
-                onClick={() => { measurePointsRef.current = []; finishMeasure(); }}
+                onClick={() => {
+                  measurePointsRef.current = [];
+                  finishMeasure();
+                }}
                 className="font-mono text-[10px] text-yellow-300/60 hover:text-yellow-300 tracking-wide transition-colors cursor-pointer"
               >
                 ✕
@@ -1182,7 +1402,7 @@ export default function CreateEstatePage() {
           <input
             type="text"
             value={name}
-            onChange={e => setName(e.target.value)}
+            onChange={(e) => setName(e.target.value)}
             placeholder="e.g. Bannerghatta Reserve"
             className="w-full bg-[#303134] border border-[#3c3c3c] rounded px-3 py-2.5 font-mono text-sm text-white placeholder:text-white/20 focus:border-vanguard-species/50 focus:outline-none transition-colors mb-5"
           />
@@ -1191,17 +1411,32 @@ export default function CreateEstatePage() {
             <div className="space-y-2.5 mb-5 p-3 bg-[#303134] rounded border border-[#3c3c3c]">
               <StatRow label="Area" value={`${stats.areaHa.toFixed(2)} ha`} />
               <StatRow label="Perimeter" value={`${stats.perimeterKm.toFixed(2)} km`} />
-              <StatRow label="Centroid" value={`${stats.centroidLat.toFixed(4)}° ${stats.centroidLon.toFixed(4)}°`} />
+              <StatRow
+                label="Centroid"
+                value={`${stats.centroidLat.toFixed(4)}° ${stats.centroidLon.toFixed(4)}°`}
+              />
               <StatRow label="Vertices" value={`${polygonCoords?.length ?? 0}`} />
             </div>
           ) : (
             <div className="flex-1 flex flex-col items-center justify-center mb-5">
               {/* Polygon icon placeholder */}
-              <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round" className="text-white/10 mb-3">
+              <svg
+                width="40"
+                height="40"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                className="text-white/10 mb-3"
+              >
                 <polygon points="3,17 7,3 14,9 21,6 18,20" />
               </svg>
               <p className="font-mono text-[10px] text-white/20 tracking-wide text-center leading-loose">
-                CLICK <span className="text-white/40">DRAW BOUNDARY</span><br />IN THE TOOLBAR TO START
+                CLICK <span className="text-white/40">DRAW BOUNDARY</span>
+                <br />
+                IN THE TOOLBAR TO START
               </p>
             </div>
           )}
@@ -1220,16 +1455,25 @@ export default function CreateEstatePage() {
               </h3>
               <div className="space-y-2 overflow-y-auto pr-1 flex-1">
                 {placemarks.map((pm) => (
-                  <div key={pm.id} className="flex flex-col bg-[#303134] p-2.5 rounded border border-[#3c3c3c] hover:border-[#00ffcc55] filter drop-shadow-sm transition-all">
+                  <div
+                    key={pm.id}
+                    className="flex flex-col bg-[#303134] p-2.5 rounded border border-[#3c3c3c] hover:border-[#00ffcc55] filter drop-shadow-sm transition-all"
+                  >
                     <div className="flex justify-between items-center mb-1">
                       {editingPlacemarkId === pm.id ? (
                         <input
                           autoFocus
                           defaultValue={pm.name}
-                          onChange={e => setEditingPlacemarkName(e.target.value)}
-                          onKeyDown={e => {
+                          onChange={(e) => setEditingPlacemarkName(e.target.value)}
+                          onKeyDown={(e) => {
                             if (e.key === 'Enter') {
-                              setPlacemarks(prev => prev.map(p => p.id === pm.id ? { ...p, name: editingPlacemarkName || p.name } : p));
+                              setPlacemarks((prev) =>
+                                prev.map((p) =>
+                                  p.id === pm.id
+                                    ? { ...p, name: editingPlacemarkName || p.name }
+                                    : p
+                                )
+                              );
                               setEditingPlacemarkId(null);
                             }
                             if (e.key === 'Escape') setEditingPlacemarkId(null);
@@ -1237,16 +1481,37 @@ export default function CreateEstatePage() {
                           className="flex-1 bg-[#0a0f1a] border border-[#00ffcc] rounded px-1.5 py-0.5 text-[#00ffcc] text-[10px] font-mono outline-none mr-2"
                         />
                       ) : (
-                        <span className="font-mono text-[11px] text-[#00ffcc] font-bold truncate pr-2">{pm.name}</span>
+                        <span className="font-mono text-[11px] text-[#00ffcc] font-bold truncate pr-2">
+                          {pm.name}
+                        </span>
                       )}
                       <div className="flex gap-2 shrink-0">
                         {editingPlacemarkId !== pm.id && (
-                          <button onClick={() => { setEditingPlacemarkId(pm.id); setEditingPlacemarkName(pm.name); }} className="text-white/40 hover:text-[#00ffcc] text-[11px] transition-colors cursor-pointer" title="Rename">✎</button>
+                          <button
+                            onClick={() => {
+                              setEditingPlacemarkId(pm.id);
+                              setEditingPlacemarkName(pm.name);
+                            }}
+                            className="text-white/40 hover:text-[#00ffcc] text-[11px] transition-colors cursor-pointer"
+                            title="Rename"
+                          >
+                            ✎
+                          </button>
                         )}
-                        <button onClick={() => setPlacemarks(prev => prev.filter(p => p.id !== pm.id))} className="text-red-400/60 hover:text-red-400 text-[11px] transition-colors cursor-pointer" title="Remove">✕</button>
+                        <button
+                          onClick={() =>
+                            setPlacemarks((prev) => prev.filter((p) => p.id !== pm.id))
+                          }
+                          className="text-red-400/60 hover:text-red-400 text-[11px] transition-colors cursor-pointer"
+                          title="Remove"
+                        >
+                          ✕
+                        </button>
                       </div>
                     </div>
-                    <span className="font-mono text-[9px] text-white/30">{pm.lat.toFixed(5)}°, {pm.lng.toFixed(5)}°</span>
+                    <span className="font-mono text-[9px] text-white/30">
+                      {pm.lat.toFixed(5)}°, {pm.lng.toFixed(5)}°
+                    </span>
                   </div>
                 ))}
               </div>

@@ -30,15 +30,25 @@ const EstateIntelPage: React.FC = () => {
   const [inventory, setInventory] = useState<TreeInventoryEntry[]>([]);
   const [editingIdx, setEditingIdx] = useState<number | null>(null);
   const [addingNew, setAddingNew] = useState(false);
-  const [newRow, setNewRow] = useState<EditRow>({ zone: '', species: '', count: '', valuePerTree: '' });
+  const [newRow, setNewRow] = useState<EditRow>({
+    zone: '',
+    species: '',
+    count: '',
+    valuePerTree: '',
+  });
   const [saved, setSaved] = useState(false);
 
   // Load estate name
   useEffect(() => {
     if (!id) return;
-    supabase.from('estates').select('name').eq('id', id).single().then(({ data }) => {
-      if (data?.name) setEstateName(data.name);
-    });
+    supabase
+      .from('estates')
+      .select('name')
+      .eq('id', id)
+      .single()
+      .then(({ data }) => {
+        if (data?.name) setEstateName(data.name);
+      });
   }, [id]);
 
   // Load inventory from localStorage
@@ -86,12 +96,12 @@ const EstateIntelPage: React.FC = () => {
   const totalValue = inventory.reduce((s, r) => s + r.count * r.valuePerTree, 0);
 
   // Group by zone for display
-  const zones = Array.from(new Set(inventory.map(r => r.zone))).sort();
+  const zones = Array.from(new Set(inventory.map((r) => r.zone))).sort();
 
   return (
     <div className="h-screen w-screen flex flex-col bg-vanguard-bg text-white overflow-hidden">
       <Header
-        onBack={() => id ? navigate(`/estate/${id}`) : navigate('/dashboard')}
+        onBack={() => (id ? navigate(`/estate/${id}`) : navigate('/dashboard'))}
         backLabel="← BACK"
         estateId={estateName}
         onSpeciesIntel={() => {}}
@@ -124,12 +134,23 @@ const EstateIntelPage: React.FC = () => {
           {/* Estate value summary */}
           <div className="grid grid-cols-3 gap-4">
             {[
-              { label: 'Total Tree Species', value: Array.from(new Set(inventory.map(r => r.species))).length.toString() },
-              { label: 'Total Trees Logged', value: inventory.reduce((s, r) => s + r.count, 0).toLocaleString('en-IN') },
+              {
+                label: 'Total Tree Species',
+                value: Array.from(new Set(inventory.map((r) => r.species))).length.toString(),
+              },
+              {
+                label: 'Total Trees Logged',
+                value: inventory.reduce((s, r) => s + r.count, 0).toLocaleString('en-IN'),
+              },
               { label: 'Total Estate Value', value: `₹${totalValue.toLocaleString('en-IN')}` },
             ].map(({ label, value }) => (
-              <div key={label} className="bg-vanguard-panel border border-vanguard-border rounded-lg p-4">
-                <div className="text-[10px] font-mono text-white/40 uppercase tracking-widest mb-1">{label}</div>
+              <div
+                key={label}
+                className="bg-vanguard-panel border border-vanguard-border rounded-lg p-4"
+              >
+                <div className="text-[10px] font-mono text-white/40 uppercase tracking-widest mb-1">
+                  {label}
+                </div>
                 <div className="text-xl font-bold font-syne text-white">{value}</div>
               </div>
             ))}
@@ -145,7 +166,8 @@ const EstateIntelPage: React.FC = () => {
                   Tree Inventory
                 </span>
                 <span className="text-[9px] font-mono text-white/25">
-                  — {inventory.length} entries across {zones.length} zone{zones.length !== 1 ? 's' : ''}
+                  — {inventory.length} entries across {zones.length} zone
+                  {zones.length !== 1 ? 's' : ''}
                 </span>
               </div>
               <button
@@ -159,8 +181,11 @@ const EstateIntelPage: React.FC = () => {
 
             {/* Column headers */}
             <div className="grid grid-cols-[1fr_1.2fr_80px_110px_110px_40px] gap-0 bg-black/60 border-b border-vanguard-border">
-              {['Zone', 'Species', 'Trees', 'Value / Tree', 'Total Value', ''].map(h => (
-                <div key={h} className="px-4 py-2 text-[9px] font-mono text-white/30 uppercase tracking-widest">
+              {['Zone', 'Species', 'Trees', 'Value / Tree', 'Total Value', ''].map((h) => (
+                <div
+                  key={h}
+                  className="px-4 py-2 text-[9px] font-mono text-white/30 uppercase tracking-widest"
+                >
                   {h}
                 </div>
               ))}
@@ -172,7 +197,8 @@ const EstateIntelPage: React.FC = () => {
                 <TreePine className="w-8 h-8 text-white/10 mb-3" />
                 <div className="text-sm font-syne text-white/30">No trees logged yet</div>
                 <div className="text-[10px] font-mono text-white/20 mt-1">
-                  Add your tree inventory to enable financial exposure calculations in incident reports
+                  Add your tree inventory to enable financial exposure calculations in incident
+                  reports
                 </div>
               </div>
             ) : (
@@ -187,7 +213,7 @@ const EstateIntelPage: React.FC = () => {
                       <input
                         autoFocus
                         value={row.zone}
-                        onChange={e => handleEdit(idx, 'zone', e.target.value)}
+                        onChange={(e) => handleEdit(idx, 'zone', e.target.value)}
                         onBlur={() => setEditingIdx(null)}
                         className="w-full bg-black/60 border border-vanguard-border rounded px-2 py-1 text-xs font-mono text-white outline-none focus:border-green-500"
                       />
@@ -201,10 +227,14 @@ const EstateIntelPage: React.FC = () => {
                     {editingIdx === idx ? (
                       <select
                         value={SPECIES_PRESETS.includes(row.species) ? row.species : ''}
-                        onChange={e => handleEdit(idx, 'species', e.target.value)}
+                        onChange={(e) => handleEdit(idx, 'species', e.target.value)}
                         className="w-full bg-black/60 border border-vanguard-border rounded px-2 py-1 text-xs font-mono text-white outline-none focus:border-green-500"
                       >
-                        {SPECIES_PRESETS.map(s => <option key={s} value={s}>{s}</option>)}
+                        {SPECIES_PRESETS.map((s) => (
+                          <option key={s} value={s}>
+                            {s}
+                          </option>
+                        ))}
                         <option value={row.species}>{row.species}</option>
                       </select>
                     ) : (
@@ -221,12 +251,14 @@ const EstateIntelPage: React.FC = () => {
                       <input
                         type="number"
                         value={row.count}
-                        onChange={e => handleEdit(idx, 'count', e.target.value)}
+                        onChange={(e) => handleEdit(idx, 'count', e.target.value)}
                         min={0}
                         className="w-full bg-black/60 border border-vanguard-border rounded px-2 py-1 text-xs font-mono text-white outline-none focus:border-green-500"
                       />
                     ) : (
-                      <span className="text-xs font-mono text-white/60">{row.count.toLocaleString('en-IN')}</span>
+                      <span className="text-xs font-mono text-white/60">
+                        {row.count.toLocaleString('en-IN')}
+                      </span>
                     )}
                   </div>
 
@@ -236,7 +268,7 @@ const EstateIntelPage: React.FC = () => {
                       <input
                         type="number"
                         value={row.valuePerTree}
-                        onChange={e => handleEdit(idx, 'valuePerTree', e.target.value)}
+                        onChange={(e) => handleEdit(idx, 'valuePerTree', e.target.value)}
                         min={0}
                         className="w-full bg-black/60 border border-vanguard-border rounded px-2 py-1 text-xs font-mono text-white outline-none focus:border-green-500"
                       />
@@ -282,7 +314,7 @@ const EstateIntelPage: React.FC = () => {
                   <input
                     autoFocus
                     value={newRow.zone}
-                    onChange={e => setNewRow(p => ({ ...p, zone: e.target.value }))}
+                    onChange={(e) => setNewRow((p) => ({ ...p, zone: e.target.value }))}
                     placeholder="Zone name"
                     className="w-full bg-black/60 border border-vanguard-border rounded px-2 py-1.5 text-xs font-mono text-white outline-none focus:border-green-500 placeholder:text-white/20"
                   />
@@ -290,18 +322,22 @@ const EstateIntelPage: React.FC = () => {
                 <div className="px-3">
                   <select
                     value={newRow.species}
-                    onChange={e => setNewRow(p => ({ ...p, species: e.target.value }))}
+                    onChange={(e) => setNewRow((p) => ({ ...p, species: e.target.value }))}
                     className="w-full bg-black/60 border border-vanguard-border rounded px-2 py-1.5 text-xs font-mono text-white outline-none focus:border-green-500"
                   >
                     <option value="">Select species</option>
-                    {SPECIES_PRESETS.map(s => <option key={s} value={s}>{s}</option>)}
+                    {SPECIES_PRESETS.map((s) => (
+                      <option key={s} value={s}>
+                        {s}
+                      </option>
+                    ))}
                   </select>
                 </div>
                 <div className="px-3">
                   <input
                     type="number"
                     value={newRow.count}
-                    onChange={e => setNewRow(p => ({ ...p, count: e.target.value }))}
+                    onChange={(e) => setNewRow((p) => ({ ...p, count: e.target.value }))}
                     placeholder="0"
                     min={0}
                     className="w-full bg-black/60 border border-vanguard-border rounded px-2 py-1.5 text-xs font-mono text-white outline-none focus:border-green-500 placeholder:text-white/20"
@@ -311,7 +347,7 @@ const EstateIntelPage: React.FC = () => {
                   <input
                     type="number"
                     value={newRow.valuePerTree}
-                    onChange={e => setNewRow(p => ({ ...p, valuePerTree: e.target.value }))}
+                    onChange={(e) => setNewRow((p) => ({ ...p, valuePerTree: e.target.value }))}
                     placeholder="₹ per tree"
                     min={0}
                     className="w-full bg-black/60 border border-vanguard-border rounded px-2 py-1.5 text-xs font-mono text-white outline-none focus:border-green-500 placeholder:text-white/20"
@@ -321,8 +357,7 @@ const EstateIntelPage: React.FC = () => {
                   <span className="text-xs font-mono text-white/30">
                     {newRow.count && newRow.valuePerTree
                       ? `₹${(parseInt(newRow.count) * parseInt(newRow.valuePerTree)).toLocaleString('en-IN')}`
-                      : '—'
-                    }
+                      : '—'}
                   </span>
                 </div>
                 <div className="px-2 flex items-center gap-1">
@@ -334,7 +369,10 @@ const EstateIntelPage: React.FC = () => {
                     <Save className="w-3 h-3" />
                   </button>
                   <button
-                    onClick={() => { setAddingNew(false); setNewRow({ zone: '', species: '', count: '', valuePerTree: '' }); }}
+                    onClick={() => {
+                      setAddingNew(false);
+                      setNewRow({ zone: '', species: '', count: '', valuePerTree: '' });
+                    }}
                     className="p-1.5 rounded hover:bg-white/5 text-white/30 hover:text-white/60"
                     title="Cancel"
                   >
@@ -364,7 +402,9 @@ const EstateIntelPage: React.FC = () => {
           <div className="flex items-start gap-3 p-4 bg-black/40 border border-vanguard-border/50 rounded-lg">
             <IndianRupee className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
             <div className="text-[10px] font-mono text-white/40 leading-relaxed">
-              This inventory is stored locally on your device and used to calculate financial exposure in evidence reports. Zones must match exactly what appears in your incident alerts for accurate damage assessment.
+              This inventory is stored locally on your device and used to calculate financial
+              exposure in evidence reports. Zones must match exactly what appears in your incident
+              alerts for accurate damage assessment.
             </div>
           </div>
         </div>

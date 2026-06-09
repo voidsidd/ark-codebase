@@ -15,11 +15,7 @@ type PanelState = 'idle' | 'generating' | 'complete' | 'error';
 const Shimmer: React.FC<{ widths: string[] }> = ({ widths }) => (
   <div className="space-y-2.5 my-4">
     {widths.map((w, i) => (
-      <div
-        key={i}
-        className="h-3 rounded narrative-shimmer"
-        style={{ width: w }}
-      />
+      <div key={i} className="h-3 rounded narrative-shimmer" style={{ width: w }} />
     ))}
   </div>
 );
@@ -31,17 +27,22 @@ function renderWithTimestamps(text: string): React.ReactNode {
     return (
       <React.Fragment key={i}>
         {isTimestampLine ? (
-          <span style={{ fontFamily: 'monospace', color: 'rgba(255,255,255,0.5)' }}>
-            {line}
-          </span>
-        ) : line}
+          <span style={{ fontFamily: 'monospace', color: 'rgba(255,255,255,0.5)' }}>{line}</span>
+        ) : (
+          line
+        )}
         {'\n'}
       </React.Fragment>
     );
   });
 }
 
-const NarrativePanel: React.FC<NarrativePanelProps> = ({ alert, recentAlerts, userRole = 'government', autoGenerate }) => {
+const NarrativePanel: React.FC<NarrativePanelProps> = ({
+  alert,
+  recentAlerts,
+  userRole = 'government',
+  autoGenerate,
+}) => {
   const cached = getCachedNarrative(alert.id);
   const [state, setState] = useState<PanelState>(cached ? 'complete' : 'idle');
   const [narrative, setNarrative] = useState<string | null>(cached?.text ?? null);
@@ -137,13 +138,15 @@ const NarrativePanel: React.FC<NarrativePanelProps> = ({ alert, recentAlerts, us
       >
         {/* Header */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <span style={{
-            fontFamily: "'JetBrains Mono', 'Fira Code', monospace",
-            fontSize: '11px',
-            letterSpacing: '0.15em',
-            color: 'rgba(255,255,255,0.4)',
-            textTransform: 'uppercase',
-          }}>
+          <span
+            style={{
+              fontFamily: "'JetBrains Mono', 'Fira Code', monospace",
+              fontSize: '11px',
+              letterSpacing: '0.15em',
+              color: 'rgba(255,255,255,0.4)',
+              textTransform: 'uppercase',
+            }}
+          >
             Intelligence Brief
           </span>
 
@@ -151,24 +154,58 @@ const NarrativePanel: React.FC<NarrativePanelProps> = ({ alert, recentAlerts, us
           <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
             {state === 'generating' && (
               <>
-                <div className="narrative-pulse-dot" style={{
-                  width: '8px', height: '8px', borderRadius: '50%', background: '#FF9500'
-                }} />
-                <span style={{ fontFamily: 'monospace', fontSize: '10px', color: '#FF9500', letterSpacing: '0.1em' }}>
+                <div
+                  className="narrative-pulse-dot"
+                  style={{
+                    width: '8px',
+                    height: '8px',
+                    borderRadius: '50%',
+                    background: '#FF9500',
+                  }}
+                />
+                <span
+                  style={{
+                    fontFamily: 'monospace',
+                    fontSize: '10px',
+                    color: '#FF9500',
+                    letterSpacing: '0.1em',
+                  }}
+                >
                   GENERATING
                 </span>
               </>
             )}
             {state === 'complete' && (
               <>
-                <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#00C851' }} />
-                <span style={{ fontFamily: 'monospace', fontSize: '10px', color: '#00C851', letterSpacing: '0.1em' }}>
+                <div
+                  style={{
+                    width: '8px',
+                    height: '8px',
+                    borderRadius: '50%',
+                    background: '#00C851',
+                  }}
+                />
+                <span
+                  style={{
+                    fontFamily: 'monospace',
+                    fontSize: '10px',
+                    color: '#00C851',
+                    letterSpacing: '0.1em',
+                  }}
+                >
                   COMPLETE
                 </span>
               </>
             )}
             {state === 'error' && (
-              <span style={{ fontFamily: 'monospace', fontSize: '10px', color: '#FF4444', letterSpacing: '0.1em' }}>
+              <span
+                style={{
+                  fontFamily: 'monospace',
+                  fontSize: '10px',
+                  color: '#FF4444',
+                  letterSpacing: '0.1em',
+                }}
+              >
                 ERROR
               </span>
             )}
@@ -179,7 +216,10 @@ const NarrativePanel: React.FC<NarrativePanelProps> = ({ alert, recentAlerts, us
         {state === 'idle' && isElevated && (
           <div style={{ marginTop: '16px' }}>
             <button
-              onClick={(e) => { e.stopPropagation(); runGeneration(); }}
+              onClick={(e) => {
+                e.stopPropagation();
+                runGeneration();
+              }}
               style={{
                 background: 'transparent',
                 border: '1px solid rgba(255,255,255,0.2)',
@@ -192,11 +232,11 @@ const NarrativePanel: React.FC<NarrativePanelProps> = ({ alert, recentAlerts, us
                 cursor: 'pointer',
                 transition: 'all 0.2s',
               }}
-              onMouseEnter={e => {
+              onMouseEnter={(e) => {
                 (e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(255,255,255,0.5)';
                 (e.currentTarget as HTMLButtonElement).style.background = 'rgba(255,255,255,0.04)';
               }}
-              onMouseLeave={e => {
+              onMouseLeave={(e) => {
                 (e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(255,255,255,0.2)';
                 (e.currentTarget as HTMLButtonElement).style.background = 'transparent';
               }}
@@ -206,36 +246,40 @@ const NarrativePanel: React.FC<NarrativePanelProps> = ({ alert, recentAlerts, us
           </div>
         )}
 
-        {state === 'generating' && (
-          <Shimmer widths={['100%', '85%', '60%']} />
-        )}
+        {state === 'generating' && <Shimmer widths={['100%', '85%', '60%']} />}
 
         {state === 'complete' && narrative && (
-          <div className="narrative-fade-in" style={{
-            marginTop: '14px',
-            fontFamily: 'inherit',
-            fontSize: '14px',
-            lineHeight: '1.7',
-            color: 'rgba(255,255,255,0.85)',
-            whiteSpace: 'pre-wrap',
-          }}>
+          <div
+            className="narrative-fade-in"
+            style={{
+              marginTop: '14px',
+              fontFamily: 'inherit',
+              fontSize: '14px',
+              lineHeight: '1.7',
+              color: 'rgba(255,255,255,0.85)',
+              whiteSpace: 'pre-wrap',
+            }}
+          >
             {renderWithTimestamps(narrative)}
           </div>
         )}
 
         {state === 'error' && (
           <p style={{ marginTop: '14px', color: '#FF4444', fontSize: '12px', lineHeight: 1.5 }}>
-            {error ?? 'Brief generation failed.'} <span style={{ opacity: 0.6 }}>Tap to retry.</span>
+            {error ?? 'Brief generation failed.'}{' '}
+            <span style={{ opacity: 0.6 }}>Tap to retry.</span>
           </p>
         )}
 
         {/* Footer */}
         {state === 'complete' && formattedAt && (
-          <div style={{
-            marginTop: '14px',
-            fontSize: '11px',
-            color: 'rgba(255,255,255,0.25)',
-          }}>
+          <div
+            style={{
+              marginTop: '14px',
+              fontSize: '11px',
+              color: 'rgba(255,255,255,0.25)',
+            }}
+          >
             Generated by Vanguard AI · {formattedAt}
           </div>
         )}

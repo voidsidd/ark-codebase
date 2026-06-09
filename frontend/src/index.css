@@ -13,7 +13,12 @@
 
 /* Radial gradient utility for hero glow */
 .bg-gradient-radial {
-  background: radial-gradient(circle, var(--tw-gradient-from) 0%, var(--tw-gradient-via) 40%, var(--tw-gradient-to) 100%);
+  background: radial-gradient(
+    circle,
+    var(--tw-gradient-from) 0%,
+    var(--tw-gradient-via) 40%,
+    var(--tw-gradient-to) 100%
+  );
 }
 
 /* Custom scrollbar for alert feed */
@@ -39,7 +44,7 @@
 
 /* Leaflet dark theme tweaks */
 .leaflet-container {
-  background: #0A0F1A !important;
+  background: #0a0f1a !important;
   font-family: 'IBM Plex Mono', monospace !important;
 }
 
@@ -50,7 +55,7 @@
 }
 
 .leaflet-popup-close-button {
-  color: #9CA3AF !important;
+  color: #9ca3af !important;
 }
 
 /* Landing Page Animations */
@@ -98,34 +103,34 @@
 /* Leaflet Draw — Dark Theme */
 .leaflet-draw-toolbar a {
   background-color: #111827 !important;
-  border: 1px solid #1F2937 !important;
+  border: 1px solid #1f2937 !important;
   color: #fff !important;
 }
 
 .leaflet-draw-toolbar a:hover {
-  background-color: #1F2937 !important;
-  border-color: #10B981 !important;
+  background-color: #1f2937 !important;
+  border-color: #10b981 !important;
 }
 
 .leaflet-draw-actions {
   background-color: #111827 !important;
-  border: 1px solid #1F2937 !important;
+  border: 1px solid #1f2937 !important;
 }
 
 .leaflet-draw-actions a {
   color: #e5e7eb !important;
   background-color: #111827 !important;
-  border-bottom: 1px solid #1F2937 !important;
+  border-bottom: 1px solid #1f2937 !important;
 }
 
 .leaflet-draw-actions a:hover {
-  background-color: #1F2937 !important;
-  color: #10B981 !important;
+  background-color: #1f2937 !important;
+  color: #10b981 !important;
 }
 
 .leaflet-draw-tooltip {
   background-color: #111827 !important;
-  border: 1px solid #1F2937 !important;
+  border: 1px solid #1f2937 !important;
   color: #9ca3af !important;
   font-family: 'IBM Plex Mono', monospace !important;
   font-size: 10px !important;

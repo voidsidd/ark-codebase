@@ -1,5 +1,18 @@
 import React, { useState, useCallback } from 'react';
-import { AlertTriangle, MapPin, Camera, Radio, ShieldAlert, Activity, X, Leaf, FileText, Loader2, Download, Brain } from 'lucide-react';
+import {
+  AlertTriangle,
+  MapPin,
+  Camera,
+  Radio,
+  ShieldAlert,
+  Activity,
+  X,
+  Leaf,
+  FileText,
+  Loader2,
+  Download,
+  Brain,
+} from 'lucide-react';
 import { AlertEvent } from '../lib/estatesData';
 import NarrativePanel from './NarrativePanel';
 import HypothesisCard from './HypothesisCard';
@@ -18,31 +31,57 @@ interface AlertDetailModalProps {
 }
 
 const TYPE_LABELS: Record<string, string> = {
-  ACOUSTIC:             'Acoustic Sensor',
-  CAMERA:               'Camera Trap',
-  COMMUNITY:            'Community Report',
-  CORRELATED:           'Correlated Incident',
-  ONE_HEALTH:           'One Health Flag',
+  ACOUSTIC: 'Acoustic Sensor',
+  CAMERA: 'Camera Trap',
+  COMMUNITY: 'Community Report',
+  CORRELATED: 'Correlated Incident',
+  ONE_HEALTH: 'One Health Flag',
   WILDLIFE_CORRELATION: 'Wildlife Correlation',
 };
 
 const PRIORITY_STYLES: Record<string, React.CSSProperties> = {
-  CRITICAL:   { background: 'rgba(255,68,68,0.12)',   color: '#FF4444', border: '1px solid rgba(255,68,68,0.4)' },
-  HIGH:       { background: 'rgba(255,100,0,0.12)',   color: '#FF6400', border: '1px solid rgba(255,100,0,0.4)' },
-  ELEVATED:   { background: 'rgba(255,149,0,0.12)',   color: '#FF9500', border: '1px solid rgba(255,149,0,0.4)' },
-  PREDICTIVE: { background: 'rgba(255,149,0,0.10)',   color: '#FF9500', border: '1px solid rgba(255,149,0,0.25)' },
-  NORMAL:     { background: 'rgba(255,255,255,0.06)', color: 'rgba(255,255,255,0.5)', border: '1px solid rgba(255,255,255,0.1)' },
+  CRITICAL: {
+    background: 'rgba(255,68,68,0.12)',
+    color: '#FF4444',
+    border: '1px solid rgba(255,68,68,0.4)',
+  },
+  HIGH: {
+    background: 'rgba(255,100,0,0.12)',
+    color: '#FF6400',
+    border: '1px solid rgba(255,100,0,0.4)',
+  },
+  ELEVATED: {
+    background: 'rgba(255,149,0,0.12)',
+    color: '#FF9500',
+    border: '1px solid rgba(255,149,0,0.4)',
+  },
+  PREDICTIVE: {
+    background: 'rgba(255,149,0,0.10)',
+    color: '#FF9500',
+    border: '1px solid rgba(255,149,0,0.25)',
+  },
+  NORMAL: {
+    background: 'rgba(255,255,255,0.06)',
+    color: 'rgba(255,255,255,0.5)',
+    border: '1px solid rgba(255,255,255,0.1)',
+  },
 };
 
 function SourceIcon({ type }: { type: string }) {
   const size = 20;
   switch (type) {
-    case 'ACOUSTIC':  return <Radio size={size} style={{ color: '#FF4444' }} />;
-    case 'CAMERA':    return <Camera size={size} style={{ color: '#FF9500' }} />;
-    case 'COMMUNITY': return <MapPin size={size} style={{ color: '#60A5FA' }} />;
-    case 'CORRELATED':return <ShieldAlert size={size} style={{ color: '#FF4444' }} />;
-    case 'ONE_HEALTH':return <Activity size={size} style={{ color: '#A78BFA' }} />;
-    default:          return <AlertTriangle size={size} style={{ color: 'rgba(255,255,255,0.4)' }} />;
+    case 'ACOUSTIC':
+      return <Radio size={size} style={{ color: '#FF4444' }} />;
+    case 'CAMERA':
+      return <Camera size={size} style={{ color: '#FF9500' }} />;
+    case 'COMMUNITY':
+      return <MapPin size={size} style={{ color: '#60A5FA' }} />;
+    case 'CORRELATED':
+      return <ShieldAlert size={size} style={{ color: '#FF4444' }} />;
+    case 'ONE_HEALTH':
+      return <Activity size={size} style={{ color: '#A78BFA' }} />;
+    default:
+      return <AlertTriangle size={size} style={{ color: 'rgba(255,255,255,0.4)' }} />;
   }
 }
 
@@ -54,8 +93,13 @@ interface IntelBrief {
   classification: 'CRITICAL' | 'HIGH' | 'ELEVATED' | 'MONITOR';
 }
 
-async function generateIntelBrief(alert: AlertEvent, recentAlerts: AlertEvent[]): Promise<IntelBrief> {
-  const relatedCount = recentAlerts.filter(a => a.zone === alert.zone && a.id !== alert.id).length;
+async function generateIntelBrief(
+  alert: AlertEvent,
+  recentAlerts: AlertEvent[]
+): Promise<IntelBrief> {
+  const relatedCount = recentAlerts.filter(
+    (a) => a.zone === alert.zone && a.id !== alert.id
+  ).length;
   const prompt = `You are VANGUARD — an elite AI wildlife protection intelligence system serving a government national estate.
 Generate a concise tactical intelligence brief for the following alert (respond with valid JSON only):
 
@@ -79,7 +123,7 @@ Respond ONLY with this JSON structure (no markdown, no codeblock):
   if (!GROQ_KEY) throw new Error('No Groq API key');
   const res = await fetch(GROQ_API_URL, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${GROQ_KEY}` },
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${GROQ_KEY}` },
     body: JSON.stringify({
       model: 'llama-3.1-8b-instant',
       messages: [{ role: 'user', content: prompt }],
@@ -95,7 +139,10 @@ Respond ONLY with this JSON structure (no markdown, no codeblock):
 
 function printIntelBrief(alert: AlertEvent, brief: IntelBrief) {
   const classColors: Record<string, string> = {
-    CRITICAL: '#FF4444', HIGH: '#FF6400', ELEVATED: '#FF9500', MONITOR: '#60A5FA',
+    CRITICAL: '#FF4444',
+    HIGH: '#FF6400',
+    ELEVATED: '#FF9500',
+    MONITOR: '#60A5FA',
   };
   const color = classColors[brief.classification] || '#FF9500';
   const win = window.open('', '_blank', 'width=720,height=900');
@@ -141,7 +188,7 @@ function printIntelBrief(alert: AlertEvent, brief: IntelBrief) {
 <div class="section"><div class="section-label">Description</div><div class="body-text">${alert.description}</div></div>
 <div class="section">
   <div class="section-label">Recommended Actions</div>
-  <ul class="action-list">${brief.recommended_actions.map(a => `<li>${a}</li>`).join('')}</ul>
+  <ul class="action-list">${brief.recommended_actions.map((a) => `<li>${a}</li>`).join('')}</ul>
 </div>
 <div class="section"><div class="section-label">Risk Window</div><div class="body-text">${brief.risk_window}</div></div>
 <div class="section"><div class="section-label">Sensor Correlations</div><div class="body-text">${brief.correlations}</div></div>
@@ -151,7 +198,12 @@ function printIntelBrief(alert: AlertEvent, brief: IntelBrief) {
   win.document.close();
 }
 
-const AlertDetailModal: React.FC<AlertDetailModalProps> = ({ alert, recentAlerts, onClose, estateId }) => {
+const AlertDetailModal: React.FC<AlertDetailModalProps> = ({
+  alert,
+  recentAlerts,
+  onClose,
+  estateId,
+}) => {
   const { isPrivate, profile } = useAuth();
   const priorityStyle = PRIORITY_STYLES[alert.priority] ?? PRIORITY_STYLES.NORMAL;
   const cachedHypothesis = getCachedHypothesis(alert.id);
@@ -159,7 +211,8 @@ const AlertDetailModal: React.FC<AlertDetailModalProps> = ({ alert, recentAlerts
 
   // Government-specific features
   const showHypothesis = !isPrivate && alert.priority === 'CRITICAL';
-  const showGovernmentNarrative = !isPrivate && (alert.priority === 'CRITICAL' || alert.priority === 'ELEVATED');
+  const showGovernmentNarrative =
+    !isPrivate && (alert.priority === 'CRITICAL' || alert.priority === 'ELEVATED');
   const showIntelligence = !isPrivate; // All government users see intelligence panel
 
   const [intelLoading, setIntelLoading] = useState(false);
@@ -184,9 +237,16 @@ const AlertDetailModal: React.FC<AlertDetailModalProps> = ({ alert, recentAlerts
           'Cross-reference with adjacent camera traps and acoustic sensors.',
           'Log incident in the Daily Intelligence Report and notify sector commander.',
         ],
-        risk_window: alert.priority === 'CRITICAL' ? 'Immediate — next 4 hours' : 'Next 12–24 hours',
-        correlations: 'Sensor correlation data unavailable offline. Check adjacent zone feeds manually.',
-        classification: alert.priority === 'CRITICAL' ? 'CRITICAL' : alert.priority === 'HIGH' ? 'HIGH' : 'ELEVATED',
+        risk_window:
+          alert.priority === 'CRITICAL' ? 'Immediate — next 4 hours' : 'Next 12–24 hours',
+        correlations:
+          'Sensor correlation data unavailable offline. Check adjacent zone feeds manually.',
+        classification:
+          alert.priority === 'CRITICAL'
+            ? 'CRITICAL'
+            : alert.priority === 'HIGH'
+              ? 'HIGH'
+              : 'ELEVATED',
       });
     } finally {
       setIntelLoading(false);
@@ -194,45 +254,64 @@ const AlertDetailModal: React.FC<AlertDetailModalProps> = ({ alert, recentAlerts
   }, [alert, recentAlerts]);
 
   const classColors: Record<string, string> = {
-    CRITICAL: '#FF4444', HIGH: '#FF6400', ELEVATED: '#FF9500', MONITOR: '#60A5FA',
+    CRITICAL: '#FF4444',
+    HIGH: '#FF6400',
+    ELEVATED: '#FF9500',
+    MONITOR: '#60A5FA',
   };
 
   return (
     <div
       onClick={onClose}
       style={{
-        position: 'fixed', inset: 0,
+        position: 'fixed',
+        inset: 0,
         background: 'rgba(0,0,0,0.65)',
         backdropFilter: 'blur(4px)',
         zIndex: 9000,
-        display: 'flex', alignItems: 'center', justifyContent: 'flex-end',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'flex-end',
       }}
     >
       {/* Drawer */}
       <div
-        onClick={e => e.stopPropagation()}
+        onClick={(e) => e.stopPropagation()}
         style={{
-          width: '500px', maxWidth: '95vw', height: '100vh',
+          width: '500px',
+          maxWidth: '95vw',
+          height: '100vh',
           background: '#080D18',
           borderLeft: '1px solid rgba(255,255,255,0.1)',
-          display: 'flex', flexDirection: 'column', overflowY: 'auto',
+          display: 'flex',
+          flexDirection: 'column',
+          overflowY: 'auto',
         }}
       >
         {/* ── Header ─────────────────────────────────────────────── */}
-        <div style={{
-          padding: '20px 24px 16px',
-          borderBottom: '1px solid rgba(255,255,255,0.08)',
-          display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start',
-          flexShrink: 0,
-        }}>
+        <div
+          style={{
+            padding: '20px 24px 16px',
+            borderBottom: '1px solid rgba(255,255,255,0.08)',
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'flex-start',
+            flexShrink: 0,
+          }}
+        >
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
             <SourceIcon type={alert.type} />
             <div>
-              <div style={{
-                fontFamily: "'JetBrains Mono', 'Fira Code', monospace",
-                fontSize: '10px', letterSpacing: '0.15em',
-                color: 'rgba(255,255,255,0.35)', textTransform: 'uppercase', marginBottom: '4px',
-              }}>
+              <div
+                style={{
+                  fontFamily: "'JetBrains Mono', 'Fira Code', monospace",
+                  fontSize: '10px',
+                  letterSpacing: '0.15em',
+                  color: 'rgba(255,255,255,0.35)',
+                  textTransform: 'uppercase',
+                  marginBottom: '4px',
+                }}
+              >
                 {TYPE_LABELS[alert.type] ?? alert.type}
               </div>
               <div style={{ fontSize: '16px', fontWeight: 600, color: '#fff' }}>
@@ -242,19 +321,40 @@ const AlertDetailModal: React.FC<AlertDetailModalProps> = ({ alert, recentAlerts
           </div>
 
           {isPrivate && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginRight: 'auto', marginLeft: '12px' }}>
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                marginRight: 'auto',
+                marginLeft: '12px',
+              }}
+            >
               <Leaf size={12} style={{ color: '#34C759' }} />
-              <span style={{ fontFamily: 'monospace', fontSize: '9px', color: '#34C759', letterSpacing: '0.12em' }}>
+              <span
+                style={{
+                  fontFamily: 'monospace',
+                  fontSize: '9px',
+                  color: '#34C759',
+                  letterSpacing: '0.12em',
+                }}
+              >
                 ESTATE MODE
               </span>
             </div>
           )}
 
-          <button onClick={onClose} style={{
-            background: 'transparent', border: 'none',
-            color: 'rgba(255,255,255,0.4)', cursor: 'pointer',
-            padding: '4px', borderRadius: '4px',
-          }}>
+          <button
+            onClick={onClose}
+            style={{
+              background: 'transparent',
+              border: 'none',
+              color: 'rgba(255,255,255,0.4)',
+              cursor: 'pointer',
+              padding: '4px',
+              borderRadius: '4px',
+            }}
+          >
             <X size={18} />
           </button>
         </div>
@@ -262,47 +362,91 @@ const AlertDetailModal: React.FC<AlertDetailModalProps> = ({ alert, recentAlerts
         {/* ── Metadata block (shared for all roles) ─────────────── */}
         <div style={{ padding: '16px 24px', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
           <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: '12px' }}>
-            <span style={{
-              ...priorityStyle,
-              fontSize: '11px', fontFamily: 'monospace', fontWeight: 600,
-              letterSpacing: '0.1em', padding: '3px 10px', borderRadius: '4px',
-            }}>
+            <span
+              style={{
+                ...priorityStyle,
+                fontSize: '11px',
+                fontFamily: 'monospace',
+                fontWeight: 600,
+                letterSpacing: '0.1em',
+                padding: '3px 10px',
+                borderRadius: '4px',
+              }}
+            >
               {isPredictive ? 'PREDICTIVE' : alert.priority}
             </span>
-            <span style={{
-              background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)',
-              color: 'rgba(255,255,255,0.7)', fontSize: '11px', fontFamily: 'monospace',
-              padding: '3px 10px', borderRadius: '4px',
-            }}>
+            <span
+              style={{
+                background: 'rgba(255,255,255,0.06)',
+                border: '1px solid rgba(255,255,255,0.12)',
+                color: 'rgba(255,255,255,0.7)',
+                fontSize: '11px',
+                fontFamily: 'monospace',
+                padding: '3px 10px',
+                borderRadius: '4px',
+              }}
+            >
               ZONE {alert.zone?.replace('Z', '') ?? '—'}
             </span>
             {alert.confidence != null && (
-              <span style={{
-                background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)',
-                color: 'rgba(255,255,255,0.5)', fontSize: '11px', fontFamily: 'monospace',
-                padding: '3px 10px', borderRadius: '4px',
-              }}>
+              <span
+                style={{
+                  background: 'rgba(255,255,255,0.04)',
+                  border: '1px solid rgba(255,255,255,0.08)',
+                  color: 'rgba(255,255,255,0.5)',
+                  fontSize: '11px',
+                  fontFamily: 'monospace',
+                  padding: '3px 10px',
+                  borderRadius: '4px',
+                }}
+              >
                 {(alert.confidence * 100).toFixed(0)}% CONF
               </span>
             )}
           </div>
 
-          <p style={{ fontSize: '14px', color: 'rgba(255,255,255,0.75)', lineHeight: 1.65, margin: 0 }}>
+          <p
+            style={{
+              fontSize: '14px',
+              color: 'rgba(255,255,255,0.75)',
+              lineHeight: 1.65,
+              margin: 0,
+            }}
+          >
             {alert.description}
           </p>
-          <div style={{ marginTop: '10px', fontSize: '11px', color: 'rgba(255,255,255,0.3)', fontFamily: 'monospace' }}>
+          <div
+            style={{
+              marginTop: '10px',
+              fontSize: '11px',
+              color: 'rgba(255,255,255,0.3)',
+              fontFamily: 'monospace',
+            }}
+          >
             {alert.timestamp}
           </div>
         </div>
 
         {/* ── Predictive correlation block (government only) ─────── */}
         {isPredictive && !isPrivate && (
-          <div style={{
-            margin: '16px 24px 0',
-            background: 'rgba(255,149,0,0.06)', border: '1px solid rgba(255,149,0,0.2)',
-            borderRadius: '8px', padding: '16px 20px',
-          }}>
-            <div style={{ fontFamily: 'monospace', fontSize: '11px', color: '#FF9500', letterSpacing: '0.12em', marginBottom: '12px' }}>
+          <div
+            style={{
+              margin: '16px 24px 0',
+              background: 'rgba(255,149,0,0.06)',
+              border: '1px solid rgba(255,149,0,0.2)',
+              borderRadius: '8px',
+              padding: '16px 20px',
+            }}
+          >
+            <div
+              style={{
+                fontFamily: 'monospace',
+                fontSize: '11px',
+                color: '#FF9500',
+                letterSpacing: '0.12em',
+                marginBottom: '12px',
+              }}
+            >
               PREDICTIVE THREAT INTELLIGENCE
             </div>
             <div style={{ fontSize: '32px', fontWeight: 700, color: '#FF9500', lineHeight: 1 }}>
@@ -311,8 +455,21 @@ const AlertDetailModal: React.FC<AlertDetailModalProps> = ({ alert, recentAlerts
             <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.5)', marginTop: '4px' }}>
               of wildlife sightings in {alert.zone} preceded a poaching attempt
             </div>
-            <div style={{ marginTop: '12px', borderTop: '1px solid rgba(255,149,0,0.15)', paddingTop: '12px' }}>
-              <div style={{ fontSize: '10px', fontFamily: 'monospace', color: 'rgba(255,255,255,0.3)', letterSpacing: '0.1em' }}>
+            <div
+              style={{
+                marginTop: '12px',
+                borderTop: '1px solid rgba(255,149,0,0.15)',
+                paddingTop: '12px',
+              }}
+            >
+              <div
+                style={{
+                  fontSize: '10px',
+                  fontFamily: 'monospace',
+                  color: 'rgba(255,255,255,0.3)',
+                  letterSpacing: '0.1em',
+                }}
+              >
                 ELEVATED RISK WINDOW
               </div>
               <div style={{ fontSize: '16px', fontWeight: 600, color: '#fff', marginTop: '4px' }}>
@@ -328,17 +485,34 @@ const AlertDetailModal: React.FC<AlertDetailModalProps> = ({ alert, recentAlerts
         {/* ── GOVERNMENT ONLY: Alert Intelligence Panel ──────────── */}
         {showIntelligence && (
           <div style={{ padding: '16px 24px', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
-            <div style={{
-              background: 'rgba(37, 244, 238, 0.04)',
-              border: '1px solid rgba(37, 244, 238, 0.18)',
-              borderRadius: '10px',
-              padding: '16px 20px',
-            }}>
+            <div
+              style={{
+                background: 'rgba(37, 244, 238, 0.04)',
+                border: '1px solid rgba(37, 244, 238, 0.18)',
+                borderRadius: '10px',
+                padding: '16px 20px',
+              }}
+            >
               {/* Panel header */}
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px' }}>
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  marginBottom: '14px',
+                }}
+              >
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                   <Brain size={16} style={{ color: '#25F4EE' }} />
-                  <span style={{ fontFamily: 'monospace', fontSize: '11px', color: '#25F4EE', letterSpacing: '0.15em', fontWeight: 700 }}>
+                  <span
+                    style={{
+                      fontFamily: 'monospace',
+                      fontSize: '11px',
+                      color: '#25F4EE',
+                      letterSpacing: '0.15em',
+                      fontWeight: 700,
+                    }}
+                  >
                     ALERT INTELLIGENCE
                   </span>
                 </div>
@@ -347,11 +521,19 @@ const AlertDetailModal: React.FC<AlertDetailModalProps> = ({ alert, recentAlerts
                     <button
                       onClick={() => printIntelBrief(alert, intelBrief)}
                       style={{
-                        display: 'flex', alignItems: 'center', gap: '6px',
-                        background: 'rgba(37, 244, 238, 0.12)', border: '1px solid rgba(37, 244, 238, 0.35)',
-                        borderRadius: '6px', padding: '5px 10px', cursor: 'pointer',
-                        color: '#25F4EE', fontFamily: 'monospace', fontSize: '10px',
-                        letterSpacing: '0.1em', fontWeight: 700,
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                        background: 'rgba(37, 244, 238, 0.12)',
+                        border: '1px solid rgba(37, 244, 238, 0.35)',
+                        borderRadius: '6px',
+                        padding: '5px 10px',
+                        cursor: 'pointer',
+                        color: '#25F4EE',
+                        fontFamily: 'monospace',
+                        fontSize: '10px',
+                        letterSpacing: '0.1em',
+                        fontWeight: 700,
                       }}
                     >
                       <Download size={12} />
@@ -363,15 +545,28 @@ const AlertDetailModal: React.FC<AlertDetailModalProps> = ({ alert, recentAlerts
                       onClick={handleGenerateIntel}
                       disabled={intelLoading}
                       style={{
-                        display: 'flex', alignItems: 'center', gap: '6px',
-                        background: intelLoading ? 'rgba(37,244,238,0.06)' : 'rgba(37, 244, 238, 0.15)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                        background: intelLoading
+                          ? 'rgba(37,244,238,0.06)'
+                          : 'rgba(37, 244, 238, 0.15)',
                         border: '1px solid rgba(37, 244, 238, 0.35)',
-                        borderRadius: '6px', padding: '5px 12px', cursor: intelLoading ? 'not-allowed' : 'pointer',
-                        color: '#25F4EE', fontFamily: 'monospace', fontSize: '10px',
-                        letterSpacing: '0.1em', fontWeight: 700,
+                        borderRadius: '6px',
+                        padding: '5px 12px',
+                        cursor: intelLoading ? 'not-allowed' : 'pointer',
+                        color: '#25F4EE',
+                        fontFamily: 'monospace',
+                        fontSize: '10px',
+                        letterSpacing: '0.1em',
+                        fontWeight: 700,
                       }}
                     >
-                      {intelLoading ? <Loader2 size={12} className="animate-spin" /> : <FileText size={12} />}
+                      {intelLoading ? (
+                        <Loader2 size={12} className="animate-spin" />
+                      ) : (
+                        <FileText size={12} />
+                      )}
                       {intelLoading ? 'GENERATING...' : 'GENERATE INTEL'}
                     </button>
                   )}
@@ -380,16 +575,34 @@ const AlertDetailModal: React.FC<AlertDetailModalProps> = ({ alert, recentAlerts
 
               {/* No brief yet */}
               {!intelBrief && !intelLoading && (
-                <p style={{ fontSize: '12px', color: 'rgba(255,255,255,0.35)', fontFamily: 'monospace' }}>
-                  Generate a classified AI intelligence brief for this alert, including threat assessment, recommended actions, and PDF export.
+                <p
+                  style={{
+                    fontSize: '12px',
+                    color: 'rgba(255,255,255,0.35)',
+                    fontFamily: 'monospace',
+                  }}
+                >
+                  Generate a classified AI intelligence brief for this alert, including threat
+                  assessment, recommended actions, and PDF export.
                 </p>
               )}
 
               {/* Loading state */}
               {intelLoading && (
-                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '8px 0' }}>
-                  <Loader2 size={14} style={{ color: '#25F4EE', animation: 'spin 1s linear infinite' }} />
-                  <span style={{ fontSize: '12px', color: 'rgba(37,244,238,0.7)', fontFamily: 'monospace' }}>
+                <div
+                  style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '8px 0' }}
+                >
+                  <Loader2
+                    size={14}
+                    style={{ color: '#25F4EE', animation: 'spin 1s linear infinite' }}
+                  />
+                  <span
+                    style={{
+                      fontSize: '12px',
+                      color: 'rgba(37,244,238,0.7)',
+                      fontFamily: 'monospace',
+                    }}
+                  >
                     VANGUARD AI ANALYZING THREAT VECTOR...
                   </span>
                 </div>
@@ -397,7 +610,14 @@ const AlertDetailModal: React.FC<AlertDetailModalProps> = ({ alert, recentAlerts
 
               {/* Error fallback message */}
               {intelError && (
-                <div style={{ fontSize: '10px', color: 'rgba(255,149,0,0.7)', fontFamily: 'monospace', marginBottom: '10px' }}>
+                <div
+                  style={{
+                    fontSize: '10px',
+                    color: 'rgba(255,149,0,0.7)',
+                    fontFamily: 'monospace',
+                    marginBottom: '10px',
+                  }}
+                >
                   ⚠ {intelError}
                 </div>
               )}
@@ -406,43 +626,100 @@ const AlertDetailModal: React.FC<AlertDetailModalProps> = ({ alert, recentAlerts
               {intelBrief && (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
                   {/* classification */}
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-                    <span style={{
-                      background: `${classColors[intelBrief.classification]}22`,
-                      border: `1px solid ${classColors[intelBrief.classification]}66`,
-                      color: classColors[intelBrief.classification],
-                      fontSize: '10px', fontFamily: 'monospace', fontWeight: 700,
-                      letterSpacing: '0.12em', padding: '2px 8px', borderRadius: '4px',
-                    }}>
+                  <div
+                    style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}
+                  >
+                    <span
+                      style={{
+                        background: `${classColors[intelBrief.classification]}22`,
+                        border: `1px solid ${classColors[intelBrief.classification]}66`,
+                        color: classColors[intelBrief.classification],
+                        fontSize: '10px',
+                        fontFamily: 'monospace',
+                        fontWeight: 700,
+                        letterSpacing: '0.12em',
+                        padding: '2px 8px',
+                        borderRadius: '4px',
+                      }}
+                    >
                       {intelBrief.classification}
                     </span>
-                    <span style={{ fontFamily: 'monospace', fontSize: '10px', color: 'rgba(255,255,255,0.25)' }}>
+                    <span
+                      style={{
+                        fontFamily: 'monospace',
+                        fontSize: '10px',
+                        color: 'rgba(255,255,255,0.25)',
+                      }}
+                    >
                       AI-CLASSIFIED
                     </span>
                   </div>
 
                   {/* Threat assessment */}
                   <div>
-                    <div style={{ fontSize: '9px', fontFamily: 'monospace', color: 'rgba(255,255,255,0.3)', letterSpacing: '0.15em', textTransform: 'uppercase', marginBottom: '5px' }}>
+                    <div
+                      style={{
+                        fontSize: '9px',
+                        fontFamily: 'monospace',
+                        color: 'rgba(255,255,255,0.3)',
+                        letterSpacing: '0.15em',
+                        textTransform: 'uppercase',
+                        marginBottom: '5px',
+                      }}
+                    >
                       Threat Assessment
                     </div>
-                    <p style={{ fontSize: '13px', color: 'rgba(255,255,255,0.8)', lineHeight: 1.65, margin: 0 }}>
+                    <p
+                      style={{
+                        fontSize: '13px',
+                        color: 'rgba(255,255,255,0.8)',
+                        lineHeight: 1.65,
+                        margin: 0,
+                      }}
+                    >
                       {intelBrief.threat_assessment}
                     </p>
                   </div>
 
                   {/* Recommended actions */}
                   <div>
-                    <div style={{ fontSize: '9px', fontFamily: 'monospace', color: 'rgba(255,255,255,0.3)', letterSpacing: '0.15em', textTransform: 'uppercase', marginBottom: '5px' }}>
+                    <div
+                      style={{
+                        fontSize: '9px',
+                        fontFamily: 'monospace',
+                        color: 'rgba(255,255,255,0.3)',
+                        letterSpacing: '0.15em',
+                        textTransform: 'uppercase',
+                        marginBottom: '5px',
+                      }}
+                    >
                       Recommended Actions
                     </div>
-                    <ul style={{ margin: 0, padding: 0, listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '5px' }}>
+                    <ul
+                      style={{
+                        margin: 0,
+                        padding: 0,
+                        listStyle: 'none',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: '5px',
+                      }}
+                    >
                       {intelBrief.recommended_actions.map((a, i) => (
-                        <li key={i} style={{
-                          display: 'flex', gap: '8px', alignItems: 'flex-start',
-                          fontSize: '12px', color: 'rgba(255,255,255,0.7)', lineHeight: 1.6,
-                        }}>
-                          <span style={{ color: '#25F4EE', flexShrink: 0, marginTop: '2px' }}>▸</span>
+                        <li
+                          key={i}
+                          style={{
+                            display: 'flex',
+                            gap: '8px',
+                            alignItems: 'flex-start',
+                            fontSize: '12px',
+                            color: 'rgba(255,255,255,0.7)',
+                            lineHeight: 1.6,
+                          }}
+                        >
+                          <span style={{ color: '#25F4EE', flexShrink: 0, marginTop: '2px' }}>
+                            ▸
+                          </span>
                           {a}
                         </li>
                       ))}
@@ -451,19 +728,59 @@ const AlertDetailModal: React.FC<AlertDetailModalProps> = ({ alert, recentAlerts
 
                   {/* Risk window + correlations in a row */}
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
-                    <div style={{ background: 'rgba(255,255,255,0.04)', borderRadius: '6px', padding: '10px 12px' }}>
-                      <div style={{ fontSize: '9px', fontFamily: 'monospace', color: 'rgba(255,255,255,0.3)', letterSpacing: '0.12em', marginBottom: '4px' }}>
+                    <div
+                      style={{
+                        background: 'rgba(255,255,255,0.04)',
+                        borderRadius: '6px',
+                        padding: '10px 12px',
+                      }}
+                    >
+                      <div
+                        style={{
+                          fontSize: '9px',
+                          fontFamily: 'monospace',
+                          color: 'rgba(255,255,255,0.3)',
+                          letterSpacing: '0.12em',
+                          marginBottom: '4px',
+                        }}
+                      >
                         RISK WINDOW
                       </div>
-                      <div style={{ fontSize: '13px', fontWeight: 600, color: classColors[intelBrief.classification] }}>
+                      <div
+                        style={{
+                          fontSize: '13px',
+                          fontWeight: 600,
+                          color: classColors[intelBrief.classification],
+                        }}
+                      >
                         {intelBrief.risk_window}
                       </div>
                     </div>
-                    <div style={{ background: 'rgba(255,255,255,0.04)', borderRadius: '6px', padding: '10px 12px' }}>
-                      <div style={{ fontSize: '9px', fontFamily: 'monospace', color: 'rgba(255,255,255,0.3)', letterSpacing: '0.12em', marginBottom: '4px' }}>
+                    <div
+                      style={{
+                        background: 'rgba(255,255,255,0.04)',
+                        borderRadius: '6px',
+                        padding: '10px 12px',
+                      }}
+                    >
+                      <div
+                        style={{
+                          fontSize: '9px',
+                          fontFamily: 'monospace',
+                          color: 'rgba(255,255,255,0.3)',
+                          letterSpacing: '0.12em',
+                          marginBottom: '4px',
+                        }}
+                      >
                         CORRELATIONS
                       </div>
-                      <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.55)', lineHeight: 1.5 }}>
+                      <div
+                        style={{
+                          fontSize: '11px',
+                          color: 'rgba(255,255,255,0.55)',
+                          lineHeight: 1.5,
+                        }}
+                      >
                         {intelBrief.correlations}
                       </div>
                     </div>

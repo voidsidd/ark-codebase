@@ -54,35 +54,35 @@ interface GlobeViewerProps {
 }
 
 const ESTATE_COORDS: Record<string, { lat: number; lon: number; alt: number }> = {
-  nagarhole:     { lat: 11.9833, lon: 76.1167, alt: 15_000_000 },
-  corbett:       { lat: 29.5300, lon: 78.7747, alt: 15_000_000 },
-  kaziranga:     { lat: 26.5775, lon: 93.1711, alt: 15_000_000 },
-  sundarbans:    { lat: 21.9497, lon: 88.9468, alt: 15_000_000 },
+  nagarhole: { lat: 11.9833, lon: 76.1167, alt: 15_000_000 },
+  corbett: { lat: 29.53, lon: 78.7747, alt: 15_000_000 },
+  kaziranga: { lat: 26.5775, lon: 93.1711, alt: 15_000_000 },
+  sundarbans: { lat: 21.9497, lon: 88.9468, alt: 15_000_000 },
   'maasai-mara': { lat: -1.4061, lon: 35.1019, alt: 15_000_000 },
-  kruger:        { lat: -23.9884, lon: 31.5547, alt: 15_000_000 },
+  kruger: { lat: -23.9884, lon: 31.5547, alt: 15_000_000 },
 };
 
 const ZONE_COLORS: Record<string, { fill: string; outline: string }> = {
-  critical: { fill: 'rgba(255,51,102,0.18)',  outline: '#ff3366' },
-  warning:  { fill: 'rgba(255,170,51,0.18)',  outline: '#ffaa33' },
-  normal:   { fill: 'rgba(51,204,255,0.12)',  outline: '#33ccff' },
+  critical: { fill: 'rgba(255,51,102,0.18)', outline: '#ff3366' },
+  warning: { fill: 'rgba(255,170,51,0.18)', outline: '#ffaa33' },
+  normal: { fill: 'rgba(51,204,255,0.12)', outline: '#33ccff' },
 };
 
 // Pitch limits — prevents flipping upside down in any direction
 const MIN_PITCH = CesiumMath.toRadians(-89.9); // never quite straight down (avoids gimbal)
-const MAX_PITCH = CesiumMath.toRadians(-5);    // never look up above horizon
+const MAX_PITCH = CesiumMath.toRadians(-5); // never look up above horizon
 
 export const GlobeViewer = forwardRef<GlobeRef, GlobeViewerProps>(
   ({ estateId, zones = [], zonePolygons = [], estateBoundary }, ref) => {
     const resolvedEstateId = resolveEstateId(estateId);
     const isEstate = !!estateBoundary;
     const containerRef = useRef<HTMLDivElement>(null);
-    const viewerRef    = useRef<Viewer | null>(null);
-    const estateIdRef    = useRef(estateId);
-    const zonesRef     = useRef(zones);
+    const viewerRef = useRef<Viewer | null>(null);
+    const estateIdRef = useRef(estateId);
+    const zonesRef = useRef(zones);
 
     estateIdRef.current = estateId;
-    zonesRef.current  = zones;
+    zonesRef.current = zones;
 
     useImperativeHandle(ref, () => ({
       flyTo: (lat: number, lon: number) => {
@@ -92,7 +92,7 @@ export const GlobeViewer = forwardRef<GlobeRef, GlobeViewerProps>(
           destination: Cartesian3.fromDegrees(lon, lat, 8000),
           orientation: {
             heading: CesiumMath.toRadians(0),
-            pitch:   CesiumMath.toRadians(-40),
+            pitch: CesiumMath.toRadians(-40),
             roll: 0,
           },
           duration: 2,
@@ -104,16 +104,16 @@ export const GlobeViewer = forwardRef<GlobeRef, GlobeViewerProps>(
       if (!containerRef.current || viewerRef.current) return;
 
       const viewer = new Viewer(containerRef.current, {
-        timeline:              false,
-        animation:             false,
-        homeButton:            false,
-        sceneModePicker:       false,
-        baseLayerPicker:       false,
-        navigationHelpButton:  false,
-        geocoder:              false,
-        fullscreenButton:      false,
-        infoBox:               false,
-        selectionIndicator:    false,
+        timeline: false,
+        animation: false,
+        homeButton: false,
+        sceneModePicker: false,
+        baseLayerPicker: false,
+        navigationHelpButton: false,
+        geocoder: false,
+        fullscreenButton: false,
+        infoBox: false,
+        selectionIndicator: false,
       });
 
       // ── PERFORMANCE OPTIMIZATIONS ──────────────────────────────────────────
@@ -147,18 +147,22 @@ export const GlobeViewer = forwardRef<GlobeRef, GlobeViewerProps>(
       // ── EARTH ENGINE / SATELLITE TILES ────────────────────────────────────
       // Fetch dynamic Sentinel-2 tiles from our Node.js/EE backend
       fetch('/api/earthengine/tiles')
-        .then(r => r.json())
-        .then(data => {
+        .then((r) => r.json())
+        .then((data) => {
           if (viewer.isDestroyed()) return;
-          const url = data.urlFormat || 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}';
+          const url =
+            data.urlFormat ||
+            'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}';
           viewer.imageryLayers.addImageryProvider(new UrlTemplateImageryProvider({ url }));
         })
         .catch(() => {
           if (viewer.isDestroyed()) return;
           // Fallback to ArcGIS World Imagery if backend/EE is offline
-          viewer.imageryLayers.addImageryProvider(new UrlTemplateImageryProvider({
-            url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'
-          }));
+          viewer.imageryLayers.addImageryProvider(
+            new UrlTemplateImageryProvider({
+              url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+            })
+          );
         });
 
       viewerRef.current = viewer;
@@ -166,13 +170,13 @@ export const GlobeViewer = forwardRef<GlobeRef, GlobeViewerProps>(
       const MAX_ZOOM_OUT = 20_000_000;
       const ctrl = viewer.scene.screenSpaceCameraController;
 
-      ctrl.inertiaSpin             = 0.93;
-      ctrl.inertiaTranslate        = 0.93;
-      ctrl.inertiaZoom             = 0.8;
-      ctrl.minimumZoomDistance     = 300;        // never closer than 300m above ground
-      ctrl.maximumZoomDistance     = MAX_ZOOM_OUT;
-      ctrl.enableCollisionDetection = true;      // FIX: prevents camera going inside globe
-      ctrl.maximumMovementRatio    = 0.02;
+      ctrl.inertiaSpin = 0.93;
+      ctrl.inertiaTranslate = 0.93;
+      ctrl.inertiaZoom = 0.8;
+      ctrl.minimumZoomDistance = 300; // never closer than 300m above ground
+      ctrl.maximumZoomDistance = MAX_ZOOM_OUT;
+      ctrl.enableCollisionDetection = true; // FIX: prevents camera going inside globe
+      ctrl.maximumMovementRatio = 0.02;
 
       // ── Pitch clamp on every frame — the core fix for flipping ──────────
       // Runs after each render frame and corrects pitch if it drifted out of range
@@ -253,14 +257,10 @@ export const GlobeViewer = forwardRef<GlobeRef, GlobeViewerProps>(
       }, ScreenSpaceEventType.WHEEL);
 
       // Remove double-click zoom
-      viewer.screenSpaceEventHandler.removeInputAction(
-        ScreenSpaceEventType.LEFT_DOUBLE_CLICK
-      );
-
-
+      viewer.screenSpaceEventHandler.removeInputAction(ScreenSpaceEventType.LEFT_DOUBLE_CLICK);
 
       createWorldTerrainAsync({ requestWaterMask: true, requestVertexNormals: true })
-        .then(provider => {
+        .then((provider) => {
           if (!viewer.isDestroyed()) viewer.terrainProvider = provider;
         })
         .catch(() => {});
@@ -307,7 +307,7 @@ export const GlobeViewer = forwardRef<GlobeRef, GlobeViewerProps>(
       initView();
 
       return () => {
-        pitchClampHandler();   // remove preRender listener
+        pitchClampHandler(); // remove preRender listener
         resizeObserver.disconnect();
         if (zoomRafId) cancelAnimationFrame(zoomRafId);
         if (!viewer.isDestroyed()) viewer.destroy();
@@ -326,7 +326,7 @@ export const GlobeViewer = forwardRef<GlobeRef, GlobeViewerProps>(
             destination: Cartesian3.fromDegrees(c.lon, c.lat, c.alt),
             orientation: {
               heading: CesiumMath.toRadians(0),
-              pitch:   CesiumMath.toRadians(-90),
+              pitch: CesiumMath.toRadians(-90),
               roll: 0,
             },
             duration: 2.5,
@@ -344,12 +344,10 @@ export const GlobeViewer = forwardRef<GlobeRef, GlobeViewerProps>(
 
       // Priority: render actual polygon zones from estatesData (matches the 2D map exactly)
       if (zonePolygons && zonePolygons.length > 0) {
-        zonePolygons.forEach(zone => {
+        zonePolygons.forEach((zone) => {
           const colors = ZONE_COLORS[zone.status] || ZONE_COLORS.normal;
           // estatesData stores [lat, lon] but Cesium needs fromDegrees(lon, lat)
-          const positions = zone.coords.map(([lat, lon]) =>
-            Cartesian3.fromDegrees(lon, lat)
-          );
+          const positions = zone.coords.map(([lat, lon]) => Cartesian3.fromDegrees(lon, lat));
           if (positions.length < 3) return;
 
           viewer.entities.add({
@@ -367,7 +365,7 @@ export const GlobeViewer = forwardRef<GlobeRef, GlobeViewerProps>(
         });
       } else {
         // Fallback: render circle ellipses for legacy Zone[] objects
-        zones.forEach(zone => {
+        zones.forEach((zone) => {
           const colors = ZONE_COLORS[zone.status] || ZONE_COLORS.normal;
           viewer.entities.add({
             name: zone.name,
@@ -451,7 +449,6 @@ export const GlobeViewer = forwardRef<GlobeRef, GlobeViewerProps>(
       // Do nothing here — zone polygons are handled by the zones useEffect above.
     }, [estateId, isEstate, estateBoundary]);
 
-
     const handleReset = () => {
       const viewer = viewerRef.current;
       if (!viewer || viewer.isDestroyed()) return;
@@ -468,10 +465,7 @@ export const GlobeViewer = forwardRef<GlobeRef, GlobeViewerProps>(
 
     return (
       <div style={{ width: '100%', height: '100%', position: 'relative' }}>
-        <div
-          ref={containerRef}
-          style={{ width: '100%', height: '100%', background: '#0a0f1a' }}
-        />
+        <div ref={containerRef} style={{ width: '100%', height: '100%', background: '#0a0f1a' }} />
         <button
           onClick={handleReset}
           title="Reset view"
@@ -494,16 +488,25 @@ export const GlobeViewer = forwardRef<GlobeRef, GlobeViewerProps>(
             transition: 'border-color 0.2s, background 0.2s',
             outline: 'none',
           }}
-          onMouseEnter={e => {
+          onMouseEnter={(e) => {
             (e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(0, 255, 200, 0.7)';
             (e.currentTarget as HTMLButtonElement).style.background = 'rgba(0, 255, 200, 0.1)';
           }}
-          onMouseLeave={e => {
+          onMouseLeave={(e) => {
             (e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(0, 255, 200, 0.25)';
             (e.currentTarget as HTMLButtonElement).style.background = 'rgba(10, 15, 26, 0.65)';
           }}
         >
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(0,255,200,0.85)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <svg
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="rgba(0,255,200,0.85)"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
             <circle cx="12" cy="12" r="10" />
             <line x1="12" y1="2" x2="12" y2="6" />
             <line x1="12" y1="18" x2="12" y2="22" />

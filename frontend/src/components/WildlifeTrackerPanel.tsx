@@ -10,7 +10,13 @@ import {
 // ─── Paw print SVG icon ────────────────────────────────────────────────────────
 function PawIcon({ size = 24, color = '#FF9500' }: { size?: number; color?: string }) {
   return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill={color} xmlns="http://www.w3.org/2000/svg">
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill={color}
+      xmlns="http://www.w3.org/2000/svg"
+    >
       <ellipse cx="6" cy="5.5" rx="2" ry="2.5" />
       <ellipse cx="10" cy="3.5" rx="1.8" ry="2.2" />
       <ellipse cx="14" cy="3.5" rx="1.8" ry="2.2" />
@@ -25,26 +31,32 @@ function RiskBar({ pct }: { pct: number }) {
   const colour = pct > 70 ? '#FF4444' : pct >= 40 ? '#FF9500' : '#00C851';
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-      <div style={{
-        width: '80px',
-        height: '3px',
-        background: 'rgba(255,255,255,0.08)',
-        borderRadius: '2px',
-        overflow: 'hidden',
-      }}>
-        <div style={{
-          width: `${Math.min(pct, 100)}%`,
-          height: '100%',
-          background: colour,
+      <div
+        style={{
+          width: '80px',
+          height: '3px',
+          background: 'rgba(255,255,255,0.08)',
           borderRadius: '2px',
-          transition: 'width 0.5s ease',
-        }} />
+          overflow: 'hidden',
+        }}
+      >
+        <div
+          style={{
+            width: `${Math.min(pct, 100)}%`,
+            height: '100%',
+            background: colour,
+            borderRadius: '2px',
+            transition: 'width 0.5s ease',
+          }}
+        />
       </div>
-      <span style={{
-        fontFamily: 'monospace',
-        fontSize: '10px',
-        color: colour,
-      }}>
+      <span
+        style={{
+          fontFamily: 'monospace',
+          fontSize: '10px',
+          color: colour,
+        }}
+      >
         {pct}%
       </span>
     </div>
@@ -76,7 +88,9 @@ interface WildlifeTrackerPanelProps {
 
 const WildlifeTrackerPanel: React.FC<WildlifeTrackerPanelProps> = ({ onAlertGenerated }) => {
   const [animals, setAnimals] = useState<TrackedAnimal[]>([]);
-  const [correlations, setCorrelations] = useState<Record<string, ZoneThreatCorrelation | null>>({});
+  const [correlations, setCorrelations] = useState<Record<string, ZoneThreatCorrelation | null>>(
+    {}
+  );
   const [rowStates, setRowStates] = useState<Record<string, RowState>>({});
 
   const load = useCallback(async () => {
@@ -86,7 +100,7 @@ const WildlifeTrackerPanel: React.FC<WildlifeTrackerPanelProps> = ({ onAlertGene
     // Fetch correlations for each animal's zone
     const corrMap: Record<string, ZoneThreatCorrelation | null> = {};
     await Promise.all(
-      list.map(async animal => {
+      list.map(async (animal) => {
         const key = `${animal.animal_id}__${animal.zone_id}`;
         corrMap[key] = await fetchCorrelation(animal.zone_id, animal.species);
       })
@@ -94,64 +108,71 @@ const WildlifeTrackerPanel: React.FC<WildlifeTrackerPanelProps> = ({ onAlertGene
     setCorrelations(corrMap);
   }, []);
 
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => {
+    load();
+  }, [load]);
 
-  const handleSimulate = useCallback(async (animal: TrackedAnimal) => {
-    const key = animal.animal_id;
+  const handleSimulate = useCallback(
+    async (animal: TrackedAnimal) => {
+      const key = animal.animal_id;
 
-    setRowStates(prev => ({
-      ...prev,
-      [key]: { status: 'loading', message: 'Querying threat correlations...' },
-    }));
+      setRowStates((prev) => ({
+        ...prev,
+        [key]: { status: 'loading', message: 'Querying threat correlations...' },
+      }));
 
-    // Simulate two-phase message for UX
-    setTimeout(() => {
-      setRowStates(prev => {
-        if (prev[key]?.status === 'loading') {
-          return { ...prev, [key]: { status: 'loading', message: 'Generating predictive assessment...' } };
+      // Simulate two-phase message for UX
+      setTimeout(() => {
+        setRowStates((prev) => {
+          if (prev[key]?.status === 'loading') {
+            return {
+              ...prev,
+              [key]: { status: 'loading', message: 'Generating predictive assessment...' },
+            };
+          }
+          return prev;
+        });
+      }, 1000);
+
+      try {
+        const result = await triggerAnimalSighting(
+          animal.animal_id,
+          animal.species,
+          animal.zone_id,
+          'CT-DEMO-01'
+        );
+
+        if (result.created_alert) {
+          setRowStates((prev) => ({
+            ...prev,
+            [key]: { status: 'success', message: '⚡ PREDICTIVE ALERT GENERATED' },
+          }));
+          onAlertGenerated?.();
+          // Refresh animal list
+          await load();
+        } else {
+          setRowStates((prev) => ({
+            ...prev,
+            [key]: { status: 'no_alert', message: result.reason ?? 'No alert needed' },
+          }));
         }
-        return prev;
-      });
-    }, 1000);
 
-    try {
-      const result = await triggerAnimalSighting(
-        animal.animal_id,
-        animal.species,
-        animal.zone_id,
-        'CT-DEMO-01'
-      );
-
-      if (result.created_alert) {
-        setRowStates(prev => ({
+        // Reset after 3 seconds
+        setTimeout(() => {
+          setRowStates((prev) => ({
+            ...prev,
+            [key]: { status: 'idle', message: '' },
+          }));
+        }, 3000);
+      } catch (err) {
+        setRowStates((prev) => ({
           ...prev,
-          [key]: { status: 'success', message: '⚡ PREDICTIVE ALERT GENERATED' },
-        }));
-        onAlertGenerated?.();
-        // Refresh animal list
-        await load();
-      } else {
-        setRowStates(prev => ({
-          ...prev,
-          [key]: { status: 'no_alert', message: result.reason ?? 'No alert needed' },
+          [key]: { status: 'error', message: 'Generation failed. Retry.' },
         }));
       }
-
-      // Reset after 3 seconds
-      setTimeout(() => {
-        setRowStates(prev => ({
-          ...prev,
-          [key]: { status: 'idle', message: '' },
-        }));
-      }, 3000);
-
-    } catch (err) {
-      setRowStates(prev => ({
-        ...prev,
-        [key]: { status: 'error', message: 'Generation failed. Retry.' },
-      }));
-    }
-  }, [load, onAlertGenerated]);
+    },
+    [load, onAlertGenerated]
+  );
 
   return (
     <>
@@ -161,21 +182,25 @@ const WildlifeTrackerPanel: React.FC<WildlifeTrackerPanelProps> = ({ onAlertGene
         }
       `}</style>
 
-      <div style={{
-        background: 'rgba(255,255,255,0.02)',
-        borderTop: '1px solid rgba(255,255,255,0.08)',
-        padding: '16px',
-      }}>
+      <div
+        style={{
+          background: 'rgba(255,255,255,0.02)',
+          borderTop: '1px solid rgba(255,255,255,0.08)',
+          padding: '16px',
+        }}
+      >
         {/* Panel header */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '14px' }}>
           <PawIcon size={18} color="#FF9500" />
-          <span style={{
-            fontFamily: "'JetBrains Mono', 'Fira Code', monospace",
-            fontSize: '12px',
-            letterSpacing: '0.15em',
-            color: 'rgba(255,255,255,0.4)',
-            textTransform: 'uppercase',
-          }}>
+          <span
+            style={{
+              fontFamily: "'JetBrains Mono', 'Fira Code', monospace",
+              fontSize: '12px',
+              letterSpacing: '0.15em',
+              color: 'rgba(255,255,255,0.4)',
+              textTransform: 'uppercase',
+            }}
+          >
             Wildlife Intelligence
           </span>
         </div>
@@ -188,7 +213,7 @@ const WildlifeTrackerPanel: React.FC<WildlifeTrackerPanelProps> = ({ onAlertGene
 
         {/* Animal rows */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-          {animals.map(animal => {
+          {animals.map((animal) => {
             const corrKey = `${animal.animal_id}__${animal.zone_id}`;
             const corr = correlations[corrKey];
             const rstate = rowStates[animal.animal_id] ?? { status: 'idle', message: '' };
@@ -205,12 +230,27 @@ const WildlifeTrackerPanel: React.FC<WildlifeTrackerPanelProps> = ({ onAlertGene
                 }}
               >
                 {/* Row header */}
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                <div
+                  style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'flex-start',
+                  }}
+                >
                   <div>
-                    <div style={{ fontSize: '14px', fontFamily: 'monospace', color: '#fff', fontWeight: 600 }}>
+                    <div
+                      style={{
+                        fontSize: '14px',
+                        fontFamily: 'monospace',
+                        color: '#fff',
+                        fontWeight: 600,
+                      }}
+                    >
                       {animal.animal_id}
                     </div>
-                    <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.4)', marginTop: '2px' }}>
+                    <div
+                      style={{ fontSize: '11px', color: 'rgba(255,255,255,0.4)', marginTop: '2px' }}
+                    >
                       {animal.species}
                     </div>
                   </div>
@@ -241,16 +281,20 @@ const WildlifeTrackerPanel: React.FC<WildlifeTrackerPanelProps> = ({ onAlertGene
                 </div>
 
                 {/* Zone + last seen */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '8px' }}>
-                  <span style={{
-                    background: 'rgba(255,149,0,0.1)',
-                    border: '1px solid rgba(255,149,0,0.25)',
-                    color: '#FF9500',
-                    fontSize: '10px',
-                    fontFamily: 'monospace',
-                    padding: '2px 7px',
-                    borderRadius: '3px',
-                  }}>
+                <div
+                  style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '8px' }}
+                >
+                  <span
+                    style={{
+                      background: 'rgba(255,149,0,0.1)',
+                      border: '1px solid rgba(255,149,0,0.25)',
+                      color: '#FF9500',
+                      fontSize: '10px',
+                      fontFamily: 'monospace',
+                      padding: '2px 7px',
+                      borderRadius: '3px',
+                    }}
+                  >
                     {animal.zone_id.toUpperCase()}
                   </span>
                   <span style={{ fontSize: '11px', color: 'rgba(255,255,255,0.35)' }}>
@@ -267,16 +311,21 @@ const WildlifeTrackerPanel: React.FC<WildlifeTrackerPanelProps> = ({ onAlertGene
 
                 {/* Status message */}
                 {rstate.status !== 'idle' && (
-                  <div style={{
-                    marginTop: '8px',
-                    fontSize: '11px',
-                    fontFamily: 'monospace',
-                    color:
-                      rstate.status === 'success' ? '#00C851' :
-                      rstate.status === 'error' ? '#FF4444' :
-                      rstate.status === 'no_alert' ? '#FF9500' :
-                      'rgba(255,255,255,0.5)',
-                  }}>
+                  <div
+                    style={{
+                      marginTop: '8px',
+                      fontSize: '11px',
+                      fontFamily: 'monospace',
+                      color:
+                        rstate.status === 'success'
+                          ? '#00C851'
+                          : rstate.status === 'error'
+                            ? '#FF4444'
+                            : rstate.status === 'no_alert'
+                              ? '#FF9500'
+                              : 'rgba(255,255,255,0.5)',
+                    }}
+                  >
                     {rstate.message}
                   </div>
                 )}

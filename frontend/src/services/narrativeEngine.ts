@@ -28,7 +28,9 @@ function markRateLimited(label: string): void {
   const until = Date.now() + COOLDOWN_MS;
   rateLimitedUntil.set(label, until);
   const readableUntil = new Date(until).toLocaleTimeString();
-  console.warn(`[narrativeEngine] ${label} rate-limited — skipping for 60 s (available again at ${readableUntil}).`);
+  console.warn(
+    `[narrativeEngine] ${label} rate-limited — skipping for 60 s (available again at ${readableUntil}).`
+  );
 }
 
 export function getCachedNarrative(alertId: string) {
@@ -39,27 +41,27 @@ export function getCachedNarrative(alertId: string) {
 function buildContext(triggerAlert: AlertEvent, recentAlerts: AlertEvent[]) {
   return {
     trigger_event: {
-      zone_id:     triggerAlert.zone,
-      severity:    triggerAlert.priority,
+      zone_id: triggerAlert.zone,
+      severity: triggerAlert.priority,
       source_type: triggerAlert.type,
       description: triggerAlert.description,
-      confidence:  triggerAlert.confidence ?? null,
-      timestamp:   triggerAlert.timestamp,
-      sub_type:    triggerAlert.subType,
+      confidence: triggerAlert.confidence ?? null,
+      timestamp: triggerAlert.timestamp,
+      sub_type: triggerAlert.subType,
     },
     recent_zone_events: recentAlerts
-      .filter(a => a.zone === triggerAlert.zone && a.id !== triggerAlert.id)
+      .filter((a) => a.zone === triggerAlert.zone && a.id !== triggerAlert.id)
       .slice(-10)
-      .map(e => ({
+      .map((e) => ({
         source_type: e.type,
         description: e.description,
-        confidence:  e.confidence ?? null,
-        severity:    e.priority,
-        timestamp:   e.timestamp,
-        sub_type:    e.subType,
+        confidence: e.confidence ?? null,
+        severity: e.priority,
+        timestamp: e.timestamp,
+        sub_type: e.subType,
       })),
-    zone_id:                   triggerAlert.zone,
-    event_count_last_60_min:   recentAlerts.filter(a => a.zone === triggerAlert.zone).length,
+    zone_id: triggerAlert.zone,
+    event_count_last_60_min: recentAlerts.filter((a) => a.zone === triggerAlert.zone).length,
   };
 }
 
@@ -94,41 +96,40 @@ Rules: Write for a property owner who needs to make a decision in 10 seconds. Pl
 
 // ─── Provider definitions ─────────────────────────────────────────────────────
 type Provider =
-  | { kind: 'groq';   key: string; label: string }
+  | { kind: 'groq'; key: string; label: string }
   | { kind: 'gemini'; key: string; label: string };
 
 function getProviders(): Provider[] {
-  const groq1  = import.meta.env.VITE_GROQ_API_KEY_1;
-  const groq2  = import.meta.env.VITE_GROQ_API_KEY_2;
+  const groq1 = import.meta.env.VITE_GROQ_API_KEY_1;
+  const groq2 = import.meta.env.VITE_GROQ_API_KEY_2;
   const gemini = import.meta.env.VITE_GEMINI_API_KEY;
 
   const providers: Provider[] = [];
-  if (groq1  && groq1  !== 'undefined') providers.push({ kind: 'groq',   key: groq1,  label: 'Groq-Key-1' });
-  if (groq2  && groq2  !== 'undefined') providers.push({ kind: 'groq',   key: groq2,  label: 'Groq-Key-2' });
-  if (gemini && gemini !== 'undefined') providers.push({ kind: 'gemini', key: gemini, label: 'Gemini'      });
+  if (groq1 && groq1 !== 'undefined')
+    providers.push({ kind: 'groq', key: groq1, label: 'Groq-Key-1' });
+  if (groq2 && groq2 !== 'undefined')
+    providers.push({ kind: 'groq', key: groq2, label: 'Groq-Key-2' });
+  if (gemini && gemini !== 'undefined')
+    providers.push({ kind: 'gemini', key: gemini, label: 'Gemini' });
   return providers;
 }
 
 // ─── Groq call (OpenAI-compatible) ───────────────────────────────────────────
-async function callGroq(
-  key: string,
-  systemPrompt: string,
-  userMessage: string,
-): Promise<string> {
+async function callGroq(key: string, systemPrompt: string, userMessage: string): Promise<string> {
   const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
     method: 'POST',
     headers: {
-      'Content-Type':  'application/json',
-      'Authorization': `Bearer ${key}`,
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${key}`,
     },
     body: JSON.stringify({
-      model:       'llama3-70b-8192',
+      model: 'llama3-70b-8192',
       messages: [
         { role: 'system', content: systemPrompt },
-        { role: 'user',   content: userMessage  },
+        { role: 'user', content: userMessage },
       ],
       temperature: 0.3,
-      max_tokens:  400,
+      max_tokens: 400,
     }),
   });
 
@@ -147,11 +148,7 @@ async function callGroq(
 }
 
 // ─── Gemini call ──────────────────────────────────────────────────────────────
-async function callGemini(
-  key: string,
-  systemPrompt: string,
-  userMessage: string,
-): Promise<string> {
+async function callGemini(key: string, systemPrompt: string, userMessage: string): Promise<string> {
   const res = await fetch(
     `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-8b:generateContent?key=${key}`,
     {
@@ -162,7 +159,7 @@ async function callGemini(
         contents: [{ parts: [{ text: userMessage }] }],
         generationConfig: { temperature: 0.3, maxOutputTokens: 400 },
       }),
-    },
+    }
   );
 
   if (res.status === 429) {
@@ -181,20 +178,24 @@ async function callGemini(
 
 // ─── Offline fallback (no API needed) ────────────────────────────────────────
 function buildFallbackNarrative(alert: AlertEvent, userRole: 'government' | 'private'): string {
-  const now  = new Date();
+  const now = new Date();
   const hhmm = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
   const zone = alert.zone ?? 'Unknown Zone';
   const conf = alert.confidence != null ? `${Math.round(alert.confidence * 100)}%` : 'Unknown';
 
   if (userRole === 'private') {
-    const risk   = alert.priority === 'CRITICAL' ? 'high-risk intrusion requiring immediate response'
-                 : alert.priority === 'ELEVATED'  ? 'suspicious activity requiring investigation'
-                 : 'low-level perimeter anomaly';
-    const action = alert.priority === 'CRITICAL'
-      ? `Dispatch security to ${zone} perimeter immediately and contact local police (dial 100).`
-      : alert.priority === 'ELEVATED'
-      ? `Send security to inspect ${zone} boundary fence and access tracks.`
-      : `Log the event and monitor ${zone} sensors for further activity.`;
+    const risk =
+      alert.priority === 'CRITICAL'
+        ? 'high-risk intrusion requiring immediate response'
+        : alert.priority === 'ELEVATED'
+          ? 'suspicious activity requiring investigation'
+          : 'low-level perimeter anomaly';
+    const action =
+      alert.priority === 'CRITICAL'
+        ? `Dispatch security to ${zone} perimeter immediately and contact local police (dial 100).`
+        : alert.priority === 'ELEVATED'
+          ? `Send security to inspect ${zone} boundary fence and access tracks.`
+          : `Log the event and monitor ${zone} sensors for further activity.`;
 
     return `${hhmm} — ${alert.type} alert in plantation ${zone} indicates ${risk}.
 
@@ -211,9 +212,10 @@ RECOMMENDED ACTION: ${action}
 ⚠ AI brief unavailable (all providers quota-exhausted) — system-generated from sensor data only.`;
   }
 
-  const action = alert.priority === 'CRITICAL'
-    ? `Deploy patrol to ${zone} immediately via nearest access road.`
-    : `Dispatch reconnaissance unit to ${zone}. Maintain radio contact.`;
+  const action =
+    alert.priority === 'CRITICAL'
+      ? `Deploy patrol to ${zone} immediately via nearest access road.`
+      : `Dispatch reconnaissance unit to ${zone}. Maintain radio contact.`;
 
   return `${hhmm} — ${alert.type} contact in ${zone}, priority ${alert.priority}, confidence ${conf}.
 
@@ -234,7 +236,7 @@ RECOMMENDED ACTION: ${action}
 export async function generateNarrative(
   alert: AlertEvent,
   recentAlerts: AlertEvent[],
-  userRole: 'government' | 'private' = 'government',
+  userRole: 'government' | 'private' = 'government'
 ): Promise<string> {
   // Return cached result immediately if available
   const cached = narrativeCache.get(alert.id);
@@ -260,12 +262,12 @@ export async function generateNarrative(
 async function _doGenerate(
   alert: AlertEvent,
   recentAlerts: AlertEvent[],
-  userRole: 'government' | 'private',
+  userRole: 'government' | 'private'
 ): Promise<string> {
-  const providers  = getProviders();
-  const context    = buildContext(alert, recentAlerts);
+  const providers = getProviders();
+  const context = buildContext(alert, recentAlerts);
   const systemPrompt = userRole === 'private' ? PRIVATE_PROMPT : GOVERNMENT_PROMPT;
-  const userMessage  = `Generate an incident briefing for this alert:\n\n${JSON.stringify(context, null, 2)}`;
+  const userMessage = `Generate an incident briefing for this alert:\n\n${JSON.stringify(context, null, 2)}`;
 
   if (providers.length === 0) {
     console.warn('[narrativeEngine] No API keys configured — using offline fallback.');
@@ -282,9 +284,10 @@ async function _doGenerate(
     try {
       console.log(`[narrativeEngine] Trying ${provider.label}…`);
 
-      const text = provider.kind === 'groq'
-        ? await callGroq(provider.key, systemPrompt, userMessage)
-        : await callGemini(provider.key, systemPrompt, userMessage);
+      const text =
+        provider.kind === 'groq'
+          ? await callGroq(provider.key, systemPrompt, userMessage)
+          : await callGemini(provider.key, systemPrompt, userMessage);
 
       console.log(`[narrativeEngine] ✓ ${provider.label} succeeded.`);
 
@@ -292,18 +295,25 @@ async function _doGenerate(
       narrativeCache.set(alert.id, { text, generatedAt });
 
       // Write to Supabase non-blocking, best-effort
-      supabase.from('alerts').upsert({
-        id:                    alert.id,
-        zone_id:               alert.zone,
-        severity:              alert.priority,
-        source_type:           alert.type,
-        description:           alert.description,
-        confidence:            alert.confidence ? Math.round(alert.confidence * 100) : null,
-        narrative:             text,
-        narrative_generated_at: generatedAt,
-      }, { onConflict: 'id' }).then(({ error }) => {
-        if (error) console.warn('[narrativeEngine] Supabase write (non-critical):', error.message);
-      });
+      supabase
+        .from('alerts')
+        .upsert(
+          {
+            id: alert.id,
+            zone_id: alert.zone,
+            severity: alert.priority,
+            source_type: alert.type,
+            description: alert.description,
+            confidence: alert.confidence ? Math.round(alert.confidence * 100) : null,
+            narrative: text,
+            narrative_generated_at: generatedAt,
+          },
+          { onConflict: 'id' }
+        )
+        .then(({ error }) => {
+          if (error)
+            console.warn('[narrativeEngine] Supabase write (non-critical):', error.message);
+        });
 
       return text;
     } catch (err: any) {
@@ -312,14 +322,16 @@ async function _doGenerate(
         continue;
       }
       // Non-quota error (bad key, network, etc.) — try next provider but don't cooldown
-      console.warn(`[narrativeEngine] ${provider.label} failed (${err?.message}) — trying next provider…`);
+      console.warn(
+        `[narrativeEngine] ${provider.label} failed (${err?.message}) — trying next provider…`
+      );
       continue;
     }
   }
 
   // All providers exhausted
   console.warn('[narrativeEngine] All providers failed — using offline fallback.');
-  const fallback    = buildFallbackNarrative(alert, userRole);
+  const fallback = buildFallbackNarrative(alert, userRole);
   const generatedAt = new Date().toISOString();
   narrativeCache.set(alert.id, { text: fallback, generatedAt });
   return fallback;

@@ -3,7 +3,8 @@
   "version": "1.0.0",
   "main": "backend/server.js",
   "scripts": {
-    "start": "node backend/server.js"
+    "start": "node backend/server.js",
+    "prepare": "husky"
   },
   "dependencies": {
     "@turf/turf": "^7.3.4",
@@ -15,6 +16,9 @@
   },
   "devDependencies": {
     "@types/three": "^0.183.1",
-    "@vitejs/plugin-react": "^6.0.1"
+    "@vitejs/plugin-react": "^6.0.1",
+    "husky": "^9.1.7",
+    "lint-staged": "^17.0.7",
+    "prettier": "^3.8.3"
   }
 }
