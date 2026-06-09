@@ -24,12 +24,12 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: "20"
+          node-version: "24"
           cache: "npm"
           cache-dependency-path: frontend/package-lock.json
 
       - name: Install dependencies
-        run: npm ci
+        run: npm install
 
       # ESLint — catches real bugs, not just style
       - name: Lint (ESLint)
@@ -42,7 +42,6 @@ jobs:
       # Vite production build — validates bundling succeeds
       - name: Build
         env:
-          # Provide a dummy token so Cesium build step doesn't fail
           VITE_CESIUM_ION_TOKEN: ${{ secrets.VITE_CESIUM_ION_TOKEN || 'ci-placeholder' }}
         run: npm run build
 
@@ -70,17 +69,13 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: "20"
+          node-version: "24"
           cache: "npm"
           cache-dependency-path: backend/package-lock.json
 
       - name: Install dependencies
-        run: npm ci
+        run: npm install
 
       # Node.js syntax check — catches obvious crashes before deploy
       - name: Syntax check (node --check)
         run: node --check server.js
-
-      # Run tests if they exist (currently exit-1, so we skip on no-test stub)
-      - name: Run tests
-        run: npm test || true
