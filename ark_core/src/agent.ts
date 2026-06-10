@@ -1,20 +1,70 @@
 import { recallSimilarIncidents, storeIncident } from "./memory";
 import { routedCompletion } from "./router";
 import { AgentStats, IncidentReport, SiemEvent, TelemetryPoint } from "./types";
-import { GcsArtifactService, FileArtifactService } from "@google/adk";
-import { BigQuery } from "@google-cloud/bigquery";
-import { publishCorrelatedReport } from "./pubsub";
 import path from "path";
 
-const bigquery = new BigQuery();
-const BQ_DATASET = "soc_metrics";
-const BQ_TABLE = "incidents";
+// ─── GCP BigQuery (optional — gracefully skipped if unconfigured) ────────────
+let bqInsert: ((row: Record<string, unknown>) => Promise<void>) | null = null;
+try {
+  if (process.env.GOOGLE_CLOUD_PROJECT) {
+    const { BigQuery } = require("@google-cloud/bigquery");
+    const bigquery = new BigQuery();
+    bqInsert = async (row) => {
+      await bigquery.dataset("soc_metrics").table("incidents").insert([row]);
+    };
+    console.log("[BigQuery] Streaming enabled.");
+  }
+} catch (e) {
+  console.warn("[BigQuery] Unavailable — skipping streaming:", (e as Error).message);
+}
 
-const bucketName = process.env.GCS_BUCKET || "";
-const artifactService = bucketName
-  ? new GcsArtifactService(bucketName)
-  : new FileArtifactService(path.join(__dirname, "..", "data", "artifacts"));
+// ─── ADK Artifact Service (optional — gracefully skipped if unconfigured) ────
+let saveArtifact: ((filename: string, data: unknown) => Promise<void>) | null = null;
+try {
+  const bucketName = process.env.GCS_BUCKET || "";
+  if (bucketName) {
+    const { GcsArtifactService } = require("@google/adk");
+    const svc = new GcsArtifactService(bucketName);
+    saveArtifact = async (filename, data) => {
+      await svc.saveArtifact({
+        appName: "ark-core",
+        userId: "Analyst",
+        sessionId: "live-session",
+        filename,
+        artifact: {
+          inlineData: {
+            data: Buffer.from(JSON.stringify(data, null, 2)).toString("base64"),
+            mimeType: "application/json"
+          }
+        }
+      });
+    };
+    console.log("[ADK] GCS artifact service enabled.");
+  } else {
+    // File-based fallback
+    const { FileArtifactService } = require("@google/adk");
+    const svc = new FileArtifactService(path.join(__dirname, "..", "data", "artifacts"));
+    saveArtifact = async (filename, data) => {
+      await svc.saveArtifact({
+        appName: "ark-core",
+        userId: "Analyst",
+        sessionId: "live-session",
+        filename,
+        artifact: {
+          inlineData: {
+            data: Buffer.from(JSON.stringify(data, null, 2)).toString("base64"),
+            mimeType: "application/json"
+          }
+        }
+      });
+    };
+    console.log("[ADK] File artifact service enabled.");
+  }
+} catch (e) {
+  console.warn("[ADK] Unavailable — artifact persistence skipped:", (e as Error).message);
+}
 
+// ─── In-memory state ─────────────────────────────────────────────────────────
 const stats: AgentStats = {
   total_incidents: 0,
   total_cost_usd: 0,
@@ -27,6 +77,7 @@ const stats: AgentStats = {
 const telemetry: TelemetryPoint[] = [];
 const reports: IncidentReport[] = [];
 
+// ─── LLM output parser ────────────────────────────────────────────────────────
 function parseModelOutput(text: string): { summary: string; pattern: string; action: string; confidence: number } {
   try {
     const jsonStart = text.indexOf("{");
@@ -38,7 +89,6 @@ function parseModelOutput(text: string): { summary: string; pattern: string; act
         action?: string;
         confidence?: number;
       };
-
       if (parsed.summary && parsed.pattern && parsed.action) {
         return {
           summary: parsed.summary,
@@ -49,7 +99,7 @@ function parseModelOutput(text: string): { summary: string; pattern: string; act
       }
     }
   } catch {
-    // fall through to regex parser
+    // fall through
   }
 
   const summaryMatch = text.match(/SUMMARY\s*:\s*(.+)/i);
@@ -64,6 +114,7 @@ function parseModelOutput(text: string): { summary: string; pattern: string; act
   };
 }
 
+// ─── Core event processor ─────────────────────────────────────────────────────
 export async function processEvent(event: SiemEvent): Promise<IncidentReport> {
   const memory = await recallSimilarIncidents(event);
 
@@ -111,6 +162,7 @@ export async function processEvent(event: SiemEvent): Promise<IncidentReport> {
     confidence: parsed.confidence
   };
 
+  // Update in-memory stats
   const priorCount = stats.total_incidents;
   stats.total_incidents += 1;
   stats.total_cost_usd += report.cost_usd;
@@ -119,83 +171,43 @@ export async function processEvent(event: SiemEvent): Promise<IncidentReport> {
       ? report.latency_ms
       : (stats.avg_latency_ms * priorCount + report.latency_ms) / stats.total_incidents;
   stats.model_breakdown[report.model_used] = (stats.model_breakdown[report.model_used] ?? 0) + 1;
-  if (memory.hits.length > 0) {
-    stats.memory_hits += 1;
-  }
-  if (event.severity === "high") {
-    stats.high_severity_incidents += 1;
-  }
+  if (memory.hits.length > 0) stats.memory_hits += 1;
+  if (event.severity === "high") stats.high_severity_incidents += 1;
 
-  telemetry.push({
-    timestamp: report.timestamp,
-    latency_ms: report.latency_ms,
-    cost_usd: report.cost_usd
-  });
-
-  while (telemetry.length > 120) {
-    telemetry.shift();
-  }
+  telemetry.push({ timestamp: report.timestamp, latency_ms: report.latency_ms, cost_usd: report.cost_usd });
+  while (telemetry.length > 120) telemetry.shift();
 
   reports.unshift(report);
-  while (reports.length > 80) {
-    reports.pop();
-  }
+  while (reports.length > 80) reports.pop();
 
+  // Persist to memory store
   await storeIncident(event, report);
 
-  // Save report as an ADK artifact with Analyst and Commander roles
-  try {
-    await artifactService.saveArtifact({
-      appName: "ark-core",
-      userId: "Analyst",
-      sessionId: "live-session",
-      filename: `analyst-report-${report.event_id}.json`,
-      artifact: {
-        inlineData: {
-          data: Buffer.from(JSON.stringify(report, null, 2)).toString("base64"),
-          mimeType: "application/json"
-        }
-      }
-    });
-    
-    await artifactService.saveArtifact({
-      appName: "ark-core",
-      userId: "Commander",
-      sessionId: "live-session",
-      filename: `commander-signoff-${report.event_id}.json`,
-      artifact: {
-        inlineData: {
-          data: Buffer.from(JSON.stringify({
-            event_id: report.event_id,
-            approved: true,
-            action_taken: report.recommended_action,
-            timestamp: new Date().toISOString()
-          }, null, 2)).toString("base64"),
-          mimeType: "application/json"
-        }
-      }
-    });
-    console.log(`[ADK] Orchestrated artifacts saved for Analyst and Commander: ${report.event_id}`);
-  } catch (err) {
-    console.error("[ADK Error] Failed to persist report artifact:", err);
+  // Optional: ADK artifact persistence
+  if (saveArtifact) {
+    try {
+      await saveArtifact(`analyst-report-${report.event_id}.json`, report);
+      console.log(`[ADK] Artifact saved: ${report.event_id}`);
+    } catch (err) {
+      console.error("[ADK Error]", err);
+    }
   }
 
-  // Publish final report to Pub/Sub
-  publishCorrelatedReport(report).catch(err => console.error("Failed to publish correlated report", err));
-
-  // Stream structured output directly into BigQuery for real-time dashboarding
-  try {
-    await bigquery.dataset(BQ_DATASET).table(BQ_TABLE).insert([{
-      event_id: report.event_id,
-      severity: report.severity,
-      summary: report.summary,
-      cost_usd: report.cost_usd,
-      latency_ms: report.latency_ms,
-      timestamp: report.timestamp
-    }]);
-    console.log(`[BigQuery] Streamed report ${report.event_id} to ${BQ_DATASET}.${BQ_TABLE}`);
-  } catch (err) {
-    console.error(`[BigQuery Error] Failed to stream report ${report.event_id}:`, err);
+  // Optional: BigQuery streaming
+  if (bqInsert) {
+    try {
+      await bqInsert({
+        event_id: report.event_id,
+        severity: report.severity,
+        summary: report.summary,
+        cost_usd: report.cost_usd,
+        latency_ms: report.latency_ms,
+        timestamp: report.timestamp
+      });
+      console.log(`[BigQuery] Streamed ${report.event_id}`);
+    } catch (err) {
+      console.error("[BigQuery Error]", err);
+    }
   }
 
   return report;

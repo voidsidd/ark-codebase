@@ -1,13 +1,11 @@
 const state={events:[],reports:[],stats:{total_incidents:0,total_cost_usd:0,avg_latency_ms:0,memory_hits:0},telemetry:[],statuses:{},graph:{nodes:[],edges:[]},sse:null,counters:{},pendingRemoval:new Set(),hiddenCompleted:new Set()};
 const safe=(v)=>String(v??"").replace(/[<>&]/g,(s)=>({"<":"&lt;",">":"&gt;","&":"&amp;"}[s]));
 const money=(v)=>`$${Number(v||0).toFixed(5)}`;
-const fmtTime=(v)=>{try{return new Date(v).toLocaleString();}catch{return String(v||"-")}};
+const fmtTime=(v)=>{try{return new Date(v).toLocaleString();}catch{return String(v||"–")}};
 
 function parseImageUrl(url) {
   if (!url) return '';
-  if (url.startsWith('gs://')) {
-    return url.replace('gs://', 'https://storage.googleapis.com/');
-  }
+  if (url.startsWith('gs://')) return url.replace('gs://', 'https://storage.googleapis.com/');
   return url;
 }
 
@@ -17,13 +15,44 @@ function updateHeaderStats(){const s=state.stats;animate("mIncidents",s.total_in
 
 function findEventByReport(report){return state.events.find((e)=>e.id===report.event_id) || null;}
 
+// Severity color helper
+function sevColor(sev){
+  if(sev==='high') return '#ff3b3b';
+  if(sev==='medium') return '#f0a500';
+  return '#4ec9b0';
+}
+
 function renderEvents(){
   const root=document.getElementById("eventList");if(!root)return;
   const queued = state.events.filter((e)=>!state.hiddenCompleted.has(e.id));
-  if(!queued.length){root.innerHTML=`<div class="event-desc">All queued events processed. Refresh page to repopulate.</div>`;return;}
+  if(!queued.length){
+    root.innerHTML=`
+      <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px 20px;gap:14px;text-align:center;color:var(--muted);">
+        <div style="font-size:28px;opacity:.4">📡</div>
+        <div style="font-size:12px;text-transform:uppercase;letter-spacing:.12em;color:var(--faint);">Awaiting Camera Feed</div>
+        <div style="font-size:11px;max-width:240px;line-height:1.6;opacity:.6;">Vision detections from the Times Square feed will appear here automatically when the sensor pushes alerts.</div>
+        <div style="width:8px;height:8px;border-radius:50%;background:#4ec9b0;animation:pulse 2s infinite;margin-top:4px;"></div>
+      </div>`;
+    return;
+  }
   root.innerHTML=queued.map((e)=>{
-    const snapshotImg = e.snapshot_url ? `<img src="${safe(parseImageUrl(e.snapshot_url))}" alt="Threat Snapshot" style="width: 100%; border-radius: 4px; margin-top: 10px;"/>` : '';
-    return `<article class="event ${state.pendingRemoval.has(e.id) ? "completing" : ""}" data-id="${safe(e.id)}"><div class="event-top"><span>${safe(e.source)}</span><span class="sev">${safe(e.severity)}</span><span>${safe(e.event_type)}</span></div><div class="event-loc">${safe(e.location)}</div><div class="event-desc">${safe(e.description)}</div>${snapshotImg}<div class="event-desc" style="margin-top: 8px;">Status: ${safe(state.statuses[e.id]||"idle")}</div></article>`;
+    const snapshotImg = e.snapshot_url ? `<img src="${safe(parseImageUrl(e.snapshot_url))}" alt="Threat Snapshot" style="width:100%;border-radius:4px;margin-top:10px;"/>` : '';
+    const statusLabel = state.statuses[e.id]||"idle";
+    const statusColor = statusLabel==='processing'?'#f0a500':statusLabel==='complete'?'#4ec9b0':statusLabel==='failed'?'#ff3b3b':'var(--muted)';
+    const isCameraEvent = e.source === 'camera_harness';
+    const sourceTag = isCameraEvent ? `<span style="font-size:9px;background:rgba(255,51,51,.15);border:1px solid rgba(255,51,51,.3);color:#ff5555;padding:2px 6px;border-radius:4px;letter-spacing:.08em;">VISION</span>` : '';
+    return `<article class="event ${state.pendingRemoval.has(e.id)?"completing":""}" data-id="${safe(e.id)}">
+      <div class="event-top">
+        <span>${safe(e.source)}</span>
+        <span class="sev" style="color:${sevColor(e.severity)}">${safe(e.severity).toUpperCase()}</span>
+        <span>${safe(e.event_type)}</span>
+        ${sourceTag}
+      </div>
+      <div class="event-loc">${safe(e.location)} · ${fmtTime(e.timestamp)}</div>
+      <div class="event-desc">${safe(e.description)}</div>
+      ${snapshotImg}
+      <div class="event-desc" style="margin-top:8px;color:${statusColor}">● ${safe(statusLabel)}</div>
+    </article>`;
   }).join("");
   root.querySelectorAll(".event").forEach((el)=>el.addEventListener("click",()=>{const id=el.getAttribute("data-id");if(id)runSingle(id);}));
 }
@@ -36,7 +65,7 @@ function markEventComplete(eventId){
     state.pendingRemoval.delete(eventId);
     state.hiddenCompleted.add(eventId);
     renderEvents();
-  },850);
+  },1200);
 }
 
 function reportMetaGrid(report,event){
@@ -45,7 +74,7 @@ function reportMetaGrid(report,event){
       <div><span class="r-k">Incident</span><span class="r-v">${safe(report.event_id)}</span></div>
       <div><span class="r-k">Source</span><span class="r-v">${safe(event?.source||"unknown")}</span></div>
       <div><span class="r-k">Type</span><span class="r-v">${safe(event?.event_type||"unknown")}</span></div>
-      <div><span class="r-k">Severity</span><span class="r-v">${safe(report.severity||"unknown")}</span></div>
+      <div><span class="r-k">Severity</span><span class="r-v" style="color:${sevColor(report.severity)}">${safe(report.severity||"unknown").toUpperCase()}</span></div>
       <div><span class="r-k">Where</span><span class="r-v">${safe(event?.location||"unknown")}</span></div>
       <div><span class="r-k">When</span><span class="r-v">${safe(fmtTime(event?.timestamp||report.timestamp))}</span></div>
     </div>
@@ -55,14 +84,23 @@ function reportMetaGrid(report,event){
 function renderReports(){
   const root=document.getElementById("reportList");if(!root)return;
   const count=document.getElementById("reportCount");if(count)count.textContent=`${state.reports.length} reports`;
-  if(!state.reports.length){root.innerHTML=`<div class="event-desc">No reports yet.</div>`;return;}
+  if(!state.reports.length){
+    root.innerHTML=`
+      <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px 20px;gap:14px;text-align:center;color:var(--muted);">
+        <div style="font-size:28px;opacity:.4">🧠</div>
+        <div style="font-size:12px;text-transform:uppercase;letter-spacing:.12em;color:var(--faint);">No Reports Yet</div>
+        <div style="font-size:11px;max-width:260px;line-height:1.6;opacity:.6;">Axon will generate intelligence reports automatically as camera events are processed. Reports include pattern analysis, memory correlation, and recommended actions.</div>
+      </div>`;
+    return;
+  }
 
   root.innerHTML=state.reports.map((r)=>{
     const event = findEventByReport(r);
     const hitsCount = Array.isArray(r.memory_hits) ? r.memory_hits.length : 0;
-    const snapshotImg = event?.snapshot_url ? `<img src="${safe(parseImageUrl(event.snapshot_url))}" alt="Threat Snapshot" style="width: 100%; border-radius: 4px; margin-top: 10px;"/>` : '';
+    const snapshotImg = event?.snapshot_url ? `<img src="${safe(parseImageUrl(event.snapshot_url))}" alt="Threat Snapshot" style="width:100%;border-radius:4px;margin-top:10px;"/>` : '';
+    const memHint = hitsCount > 0 ? `<div style="font-size:10px;color:#4ec9b0;margin-bottom:6px;">⬡ ${hitsCount} memory correlation${hitsCount>1?'s':''} found — click to view graph</div>` : '';
     return `
-      <article class="report" data-event="${safe(r.event_id)}">
+      <article class="report" data-event="${safe(r.event_id)}" style="cursor:pointer;">
         <div class="r-top"><span>${safe(r.event_id)}</span><span>${safe(fmtTime(r.timestamp))}</span></div>
         ${reportMetaGrid(r,event)}
         ${snapshotImg}
@@ -71,16 +109,25 @@ function renderReports(){
         <div class="r-text r-pattern">${safe(r.pattern)}</div>
         <div class="r-label">Recommended Action Plan</div>
         <div class="r-text">${safe(r.recommended_action)}</div>
-        <div class="r-foot">${safe(r.model_used)} · ${Math.round(r.latency_ms)}ms · ${money(r.cost_usd)} · memory hits ${hitsCount} · confidence ${Math.round((Number(r.confidence||0))*100)}%</div>
+        ${memHint}
+        <div class="r-foot">${safe(r.model_used)} · ${Math.round(r.latency_ms)}ms · ${money(r.cost_usd)} · ${Math.round((Number(r.confidence||0))*100)}% confidence</div>
       </article>
     `;
   }).join("");
 
-  root.querySelectorAll(".report").forEach((el)=>el.addEventListener("click",()=>{const id=el.getAttribute("data-event");const r=state.reports.find((x)=>x.event_id===id);if(r){state.graph=r.memory_graph||{nodes:[],edges:[]};drawGraph();if(window.switchTab)window.switchTab("memory");}}));
+  root.querySelectorAll(".report").forEach((el)=>el.addEventListener("click",()=>{
+    const id=el.getAttribute("data-event");
+    const r=state.reports.find((x)=>x.event_id===id);
+    if(r){
+      state.graph=r.memory_graph||{nodes:[],edges:[]};
+      drawGraph();
+      if(window.switchTab)window.switchTab("memory");
+    }
+  }));
 }
 
 function graphDetails(g){
-  const nodeLines = (g.nodes||[]).slice(0,8).map((n)=>`<li><strong>${safe(n.id)}</strong> · ${safe(n.source||"n/a")} · ${safe(n.location||"unknown")} · ${safe(n.timestamp?fmtTime(n.timestamp):"unknown-time")}</li>`).join("");
+  const nodeLines = (g.nodes||[]).slice(0,8).map((n)=>`<li><strong>${safe(n.id)}</strong> · ${safe(n.source||"n/a")} · ${safe(n.location||"unknown")} · ${safe(n.timestamp?fmtTime(n.timestamp):"–")}</li>`).join("");
   const edgeLines = (g.edges||[]).slice(0,8).map((e)=>`<li><strong>${safe(e.source)}</strong> → <strong>${safe(e.target)}</strong> · ${(Number(e.weight||0)*100).toFixed(0)}% · ${safe(e.reason||"link")}</li>`).join("");
   return `<div class="graph-meta"><div><div class="r-label">Node Context</div><ul>${nodeLines || "<li>No nodes</li>"}</ul></div><div><div class="r-label">Edge Reasoning</div><ul>${edgeLines || "<li>No edges</li>"}</ul></div></div>`;
 }
@@ -89,13 +136,21 @@ function drawGraph(){
   const root=document.getElementById("graphCanvas");if(!root)return;
   const w=Math.max(360,root.clientWidth||400),h=Math.max(240,Math.floor((root.clientHeight||320)*0.62));
   const g=state.graph;
-  if(!g.nodes||!g.nodes.length){root.innerHTML=`<div style="padding:10px;color:#aaa;font-size:12px">No graph available yet.</div>`;return;}
+  if(!g.nodes||!g.nodes.length){
+    root.innerHTML=`
+      <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px 20px;gap:14px;text-align:center;color:var(--muted);">
+        <div style="font-size:28px;opacity:.4">⬡</div>
+        <div style="font-size:12px;text-transform:uppercase;letter-spacing:.12em;color:var(--faint);">No Graph Yet</div>
+        <div style="font-size:11px;max-width:240px;line-height:1.6;opacity:.6;">Click any report in the Reports tab to visualise its memory correlation graph here.</div>
+      </div>`;
+    return;
+  }
 
   const pos=new Map(),cx=w/2,cy=h/2;
   g.nodes.forEach((n,i)=>{if(n.is_current)pos.set(n.id,{x:cx,y:cy});else{const a=(Math.PI*2*i)/Math.max(1,g.nodes.length-1),r=Math.min(w,h)*0.35;pos.set(n.id,{x:cx+Math.cos(a)*r,y:cy+Math.sin(a)*r});}});
 
   const edges=g.edges.map((e)=>{const a=pos.get(e.source),b=pos.get(e.target);if(!a||!b)return"";const op=Math.max(0.2,Math.min(0.9,e.weight));return`<line x1="${a.x}" y1="${a.y}" x2="${b.x}" y2="${b.y}" stroke="rgba(255,255,255,${op})" stroke-width="${1+op}"/>`;}).join("");
-  const nodes=g.nodes.map((n)=>{const p=pos.get(n.id),fill=n.is_current?"#fff":"#ccc";return`<g><circle cx="${p.x}" cy="${p.y}" r="${n.is_current?12:9}" fill="${fill}"/><text x="${p.x+10}" y="${p.y-10}" fill="#ddd" font-size="10" font-family="Space Grotesk, sans-serif">${safe(n.id)}</text></g>`;}).join("");
+  const nodes=g.nodes.map((n)=>{const p=pos.get(n.id);if(!p)return"";const fill=n.is_current?"#ff5555":"#ccc";const r=n.is_current?12:9;return`<g><circle cx="${p.x}" cy="${p.y}" r="${r}" fill="${fill}"/><text x="${p.x+r+4}" y="${p.y-6}" fill="#ddd" font-size="10" font-family="Space Grotesk, sans-serif">${safe(n.id)}</text></g>`;}).join("");
 
   root.innerHTML=`<div class="graph-shell"><svg viewBox="0 0 ${w} ${h}">${edges}${nodes}</svg>${graphDetails(g)}</div>`;
 }
@@ -111,7 +166,8 @@ function spark(canvas,values,label,unit){
   ctx.beginPath();ctx.moveTo(plotLeft,plotTop);ctx.lineTo(plotLeft,plotBottom);ctx.stroke();
 
   if(!values.length){
-    ctx.fillStyle="rgba(255,255,255,.5)";ctx.font="10px Space Grotesk";ctx.fillText(`${label}: no data`,plotLeft+6,plotTop+12);
+    ctx.fillStyle="rgba(255,255,255,.4)";ctx.font="10px Space Grotesk";
+    ctx.fillText(`${label}: waiting for first report...`,plotLeft+6,plotTop+12);
     return;
   }
 
@@ -125,12 +181,12 @@ function spark(canvas,values,label,unit){
     ctx.fillText(`${val.toFixed(unit==="$"?5:0)}${unit}`,2,y+3);
   });
 
-  ctx.strokeStyle="#fff";ctx.lineWidth=1.8;ctx.beginPath();
+  ctx.strokeStyle="#4ec9b0";ctx.lineWidth=2;ctx.beginPath();
   values.forEach((v,i)=>{const x=plotLeft+(i/Math.max(1,values.length-1))*(plotRight-plotLeft);const y=plotBottom-((v-min)/span)*(plotBottom-plotTop);if(i===0)ctx.moveTo(x,y);else ctx.lineTo(x,y);});
   ctx.stroke();
 
   const latest=values[values.length-1];
-  ctx.fillStyle="#fff";ctx.fillText(`${label} latest: ${latest.toFixed(unit==="$"?5:0)}${unit}`,plotLeft+6,plotTop+12);
+  ctx.fillStyle="#4ec9b0";ctx.fillText(`${label} latest: ${latest.toFixed(unit==="$"?5:0)}${unit}`,plotLeft+6,plotTop+12);
 }
 
 function updateSparks(){
@@ -141,21 +197,13 @@ function updateSparks(){
 function log(line){const el=document.getElementById("streamLog");if(!el)return;const ts=new Date().toLocaleTimeString();el.textContent=`[${ts}] ${line}\n`+el.textContent;el.textContent=el.textContent.split("\n").slice(0,80).join("\n");}
 
 function exportReports(){
-  const payload = {
-    exported_at: new Date().toISOString(),
-    total_reports: state.reports.length,
-    reports: state.reports
-  };
-  const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
+  const payload = {exported_at:new Date().toISOString(),total_reports:state.reports.length,reports:state.reports};
+  const blob = new Blob([JSON.stringify(payload,null,2)],{type:"application/json"});
   const url = URL.createObjectURL(blob);
-  const stamp = new Date().toISOString().replace(/[:.]/g, "-");
+  const stamp = new Date().toISOString().replace(/[:.]/g,"-");
   const a = document.createElement("a");
-  a.href = url;
-  a.download = `axon-reports-${stamp}.json`;
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-  URL.revokeObjectURL(url);
+  a.href=url;a.download=`axon-reports-${stamp}.json`;
+  document.body.appendChild(a);a.click();a.remove();URL.revokeObjectURL(url);
 }
 
 async function runSingle(eventId){state.statuses[eventId]="processing";renderEvents();try{const r=await fetch("/api/process",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({eventId})});if(!r.ok)throw new Error("failed");}catch{state.statuses[eventId]="failed";renderEvents();}}
@@ -168,15 +216,27 @@ function handleStream(type,p){
       state.events.unshift(p.event);
       state.statuses[p.event.id]="idle";
       renderEvents();
+      log(`📡 Ingest: ${p.event.id} [${p.event.severity}] ${p.event.description?.slice(0,60)}`);
     }
   }
-  if(type==="processing"){if(p.eventId){state.statuses[p.eventId]=p.stage==="queued"?"queued":"processing";renderEvents();}log(`processing ${p.eventId||"batch"} ${p.stage||""}`)}
-  if(type==="report"&&p.report){const r=p.report;state.reports.unshift(r);state.statuses[r.event_id]="complete";markEventComplete(r.event_id);renderReports();state.graph=r.memory_graph||{nodes:[],edges:[]};drawGraph();if(window.switchTab)window.switchTab("reports");log(`report complete ${r.event_id}`)}
+  if(type==="processing"){if(p.eventId){state.statuses[p.eventId]=p.stage==="queued"?"queued":"processing";renderEvents();}log(`⚙ Processing ${p.eventId||"batch"} — ${p.stage||""}`)}
+  if(type==="report"&&p.report){
+    const r=p.report;
+    state.reports.unshift(r);
+    state.statuses[r.event_id]="complete";
+    markEventComplete(r.event_id);
+    renderReports();
+    // Update graph with latest report data automatically
+    state.graph=r.memory_graph||{nodes:[],edges:[]};
+    drawGraph();
+    if(window.switchTab)window.switchTab("reports");
+    log(`📋 Report: ${r.event_id} — ${r.severity} · ${Math.round(r.latency_ms)}ms · ${money(r.cost_usd)}`);
+  }
   if(type==="stats"){if(p.stats)state.stats=p.stats;if(p.telemetry)state.telemetry=p.telemetry;updateHeaderStats();updateSparks();}
-  if(type==="error"){if(p.eventId)state.statuses[p.eventId]="failed";renderEvents();log(`error ${p.eventId||""} ${p.message||""}`)}
+  if(type==="error"){if(p.eventId)state.statuses[p.eventId]="failed";renderEvents();log(`❌ Error ${p.eventId||""}: ${p.message||""}`)}
 }
 
-function connectSSE(){if(state.sse)state.sse.close();const es=new EventSource("/api/stream");state.sse=es;["ingest","processing","report","stats","error","heartbeat"].forEach((t)=>es.addEventListener(t,(ev)=>{const msg=JSON.parse(ev.data);handleStream(t,msg.payload||{});}));es.onerror=()=>log("sse reconnecting...");}
+function connectSSE(){if(state.sse)state.sse.close();const es=new EventSource("/api/stream");state.sse=es;["ingest","processing","report","stats","error","heartbeat"].forEach((t)=>es.addEventListener(t,(ev)=>{const msg=JSON.parse(ev.data);handleStream(t,msg.payload||{});}));es.onerror=()=>log("⚠ SSE reconnecting...");es.onopen=()=>log("✓ Live stream connected");}
 
 async function bootstrap(){
   const [events,stats,tele,reports]=await Promise.all([fetch("/api/events"),fetch("/api/stats"),fetch("/api/telemetry"),fetch("/api/reports")]);
@@ -193,7 +253,7 @@ function wireCommonButtons(){
   const a=document.getElementById("runNextBtn"),b=document.getElementById("runAllBtn"),x=document.getElementById("exportReportsBtn");
   if(a)a.addEventListener("click",runNext);if(b)b.addEventListener("click",runAll);
   if(x)x.addEventListener("click",exportReports);
-  document.addEventListener("keydown",(e)=>{if(e.key.toLowerCase()==="r"&&e.shiftKey){e.preventDefault();runAll();}else if(e.key.toLowerCase()==="r"){e.preventDefault();runNext();}else if(e.key.toLowerCase()==="m"){const g=document.getElementById("graph");if(g)g.scrollIntoView({behavior:"smooth",block:"start"});}});
+  document.addEventListener("keydown",(e)=>{if(e.key.toLowerCase()==="r"&&e.shiftKey){e.preventDefault();runAll();}else if(e.key.toLowerCase()==="r"){e.preventDefault();runNext();}});
   window.addEventListener("resize",()=>{drawGraph();updateSparks();});
 }
 
