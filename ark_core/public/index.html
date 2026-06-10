@@ -1,12 +1,542 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta http-equiv="refresh" content="0; url=/events.html" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Ark Core</title>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Ark Core · Unified SOC Command Center</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous"/>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="/styles.css"/>
+  <style>
+    /* Two-column layout */
+    .dashboard-grid {
+      display: grid;
+      grid-template-columns: 460px 1fr;
+      gap: 16px;
+      min-height: calc(100vh - 110px);
+    }
+    
+    @media (max-width: 1300px) {
+      .dashboard-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    /* Video & vision styling */
+    .video-panel {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .video-container {
+      position: relative;
+      width: 100%;
+      background: #000;
+      border-radius: 12px;
+      overflow: hidden;
+      border: 1px solid var(--line);
+      aspect-ratio: 16/9;
+    }
+    .video-container video {
+      display: block;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+    .video-container canvas {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+    }
+    .feed-label {
+      position: absolute;
+      top: 12px;
+      left: 12px;
+      background: rgba(0,0,0,0.7);
+      border: 1px solid rgba(255,50,50,0.5);
+      border-radius: 6px;
+      padding: 4px 10px;
+      font-size: 11px;
+      letter-spacing: .08em;
+      color: #ff5555;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      z-index: 10;
+    }
+    .feed-label .rec-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #ff3333;
+      animation: pulse 1.5s infinite;
+    }
+    .feed-ts {
+      position: absolute;
+      bottom: 12px;
+      right: 12px;
+      background: rgba(0,0,0,0.7);
+      border-radius: 6px;
+      padding: 4px 10px;
+      font-size: 10px;
+      color: var(--muted);
+      font-family: monospace;
+      z-index: 10;
+    }
+
+    /* Video Statistics */
+    .detection-stats {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 8px;
+    }
+    .det-stat {
+      padding: 10px;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: var(--glass);
+      text-align: center;
+    }
+    .det-stat .det-val {
+      font-size: 20px;
+      font-weight: 700;
+    }
+    .det-stat .det-lbl {
+      font-size: 8px;
+      text-transform: uppercase;
+      letter-spacing: .12em;
+      color: var(--faint);
+      margin-top: 4px;
+    }
+    
+    .vision-log-title {
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: var(--faint);
+      margin-bottom: 6px;
+    }
+    .detection-log {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      white-space: pre-wrap;
+      color: var(--muted);
+      padding: 12px;
+      background: rgba(0,0,0,0.4);
+      border-radius: 8px;
+      font-size: 11px;
+      height: 180px;
+      overflow-y: auto;
+      border: 1px solid var(--line);
+    }
+
+    /* Tabs switching styling */
+    .tab-content {
+      display: none;
+      height: 100%;
+    }
+    .tab-content.active {
+      display: block;
+    }
+
+    /* Nav Button Styling */
+    .nav-links button {
+      background: transparent;
+      border: 1px solid transparent;
+      text-align: left;
+      cursor: pointer;
+      font-family: inherit;
+    }
+    .nav-links button:focus {
+      outline: none;
+    }
+  </style>
 </head>
 <body>
-  <p>Redirecting to <a href="/events.html">events</a>...</p>
+  <div class="app">
+    <aside class="nav">
+      <div class="brand">
+        <h1>ARK CORE</h1>
+        <p>SOC Intelligence Layer</p>
+      </div>
+      <div class="nav-links">
+        <button class="nav-item active" data-tab="events">Events Queue</button>
+        <button class="nav-item" data-tab="reports">Analyst Reports</button>
+        <button class="nav-item" data-tab="memory">Memory Graph</button>
+        <button class="nav-item" data-tab="telemetry">System Telemetry</button>
+        <button class="nav-item" data-tab="processing">Live Logs</button>
+      </div>
+      <div class="quick">
+        <h3>Shortcuts</h3>
+        <div class="hotkey"><span>Run next</span><span class="kbd">R</span></div>
+        <div class="hotkey"><span>Run all</span><span class="kbd">Shift+R</span></div>
+      </div>
+    </aside>
+    
+    <main class="main">
+      <header class="topbar">
+        <div style="font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)">SOC Command Center</div>
+        <div class="live"><span class="dot"></span> Active Scanning</div>
+        <div class="head-stats">
+          <span id="headIncidents">0 INCIDENTS</span>
+          <span id="headCost">$0.00000 COST</span>
+          <span id="headLatency">0MS LAT</span>
+        </div>
+      </header>
+
+      <section class="stats">
+        <article class="card"><div class="label">Total Incidents</div><div class="value" id="mIncidents">0</div></article>
+        <article class="card"><div class="label">Average Latency</div><div class="value" id="mLatency">0ms</div></article>
+        <article class="card"><div class="label">Total Cost</div><div class="value" id="mCost">$0.00000</div></article>
+        <article class="card"><div class="label">Memory Correlations</div><div class="value" id="mMemory">0</div></article>
+      </section>
+
+      <div class="dashboard-grid">
+        <!-- Persistent Left Column: Live Video Analysis -->
+        <div class="video-panel">
+          <div class="panel" style="flex: 1; display: flex; flex-direction: column; gap: 10px;">
+            <div class="panel-head">
+              <div class="panel-title">Live Vision Stream</div>
+            </div>
+            <div class="video-container">
+              <div class="feed-label"><span class="rec-dot"></span>CAM-TS-01 · TIMES SQUARE</div>
+              <video id="liveVideo" src="/media/times_square_earthcam.mp4" autoplay loop muted playsinline></video>
+              <canvas id="overlayCanvas"></canvas>
+              <div class="feed-ts" id="feedTimestamp">--:--:--</div>
+            </div>
+            <div class="detection-stats">
+              <div class="det-stat"><div class="det-val" id="detTotal">0</div><div class="det-lbl">Detections</div></div>
+              <div class="det-stat"><div class="det-val" id="detThreats">0</div><div class="det-lbl">Threats</div></div>
+              <div class="det-stat"><div class="det-val" id="detBoxes">0</div><div class="det-lbl">Active Boxes</div></div>
+              <div class="det-stat"><div class="det-val" id="detFPS">--</div><div class="det-lbl">Rate</div></div>
+            </div>
+            <div>
+              <div class="vision-log-title">Vision Engine Analysis</div>
+              <div class="detection-log" id="visionLog">Waiting for Gemini Vision detections...</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Dynamic Right Column: Tabbed Panels -->
+        <div class="tab-panels">
+          <!-- Events Tab -->
+          <div id="tab-events" class="tab-content active" style="height: 100%;">
+            <div class="panel page-fill" style="display: flex; flex-direction: column; height: 100%;">
+              <div class="panel-head">
+                <div class="panel-title">Events Queue</div>
+              </div>
+              <div id="eventProgressNote" class="event-desc" style="margin-bottom:8px"></div>
+              <div id="eventList" class="scroll-col" style="flex: 1;"></div>
+              <div class="row" style="margin-top: 10px;">
+                <button id="runNextBtn" class="btn">Run Next</button>
+                <button id="runAllBtn" class="btn">Run All</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Reports Tab -->
+          <div id="tab-reports" class="tab-content" style="height: 100%;">
+            <div class="panel page-fill" style="display: flex; flex-direction: column; height: 100%;">
+              <div class="panel-head">
+                <div class="panel-title">Analyst Reports</div>
+                <div id="reportCount" style="font-size:11px;color:var(--muted)">0 reports</div>
+              </div>
+              <div class="row" style="margin-bottom: 10px;">
+                <button id="exportReportsBtn" class="btn">Export All Reports</button>
+              </div>
+              <div id="reportList" class="scroll-col" style="flex: 1;"></div>
+            </div>
+          </div>
+
+          <!-- Memory Graph Tab -->
+          <div id="tab-memory" class="tab-content" style="height: 100%;">
+            <div class="panel page-fill" style="display: flex; flex-direction: column; height: 100%;">
+              <div class="panel-head">
+                <div class="panel-title">Incident Memory Graph Correlation</div>
+              </div>
+              <div id="graphCanvas" class="graph" style="flex: 1; min-height: 320px;"></div>
+            </div>
+          </div>
+
+          <!-- Telemetry Tab -->
+          <div id="tab-telemetry" class="tab-content" style="height: 100%;">
+            <div class="panel page-fill" style="display: flex; flex-direction: column; gap: 16px; height: 100%;">
+              <div class="panel-head">
+                <div class="panel-title">System Metrics & Token Telemetry</div>
+              </div>
+              <div style="flex: 1; display: flex; flex-direction: column; gap: 16px;">
+                <div class="spark" style="flex: 1; min-height: 150px;">
+                  <canvas id="latencySpark"></canvas>
+                </div>
+                <div class="spark" style="flex: 1; min-height: 150px;">
+                  <canvas id="costSpark"></canvas>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Processing Logs Tab -->
+          <div id="tab-processing" class="tab-content" style="height: 100%;">
+            <div class="panel page-fill" style="display: flex; flex-direction: column; height: 100%;">
+              <div class="panel-head">
+                <div class="panel-title">Real-Time Core Stream</div>
+              </div>
+              <pre id="streamLog" class="stream" style="flex: 1; margin: 0; min-height: 300px;"></pre>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script src="/app.js"></script>
+  <script>
+    // Tab switching logic
+    function switchTab(tabId, buttonEl) {
+      // Deactivate all nav-links
+      document.querySelectorAll('.nav-links button').forEach(btn => {
+        btn.classList.remove('active');
+      });
+      // Activate clicked nav button
+      if (buttonEl) {
+        buttonEl.classList.add('active');
+      } else {
+        const targetBtn = document.querySelector(`.nav-links button[data-tab="${tabId}"]`);
+        if (targetBtn) targetBtn.classList.add('active');
+      }
+      
+      // Hide all tabs
+      document.querySelectorAll('.tab-content').forEach(tab => {
+        tab.classList.remove('active');
+      });
+      // Show selected tab
+      const targetTab = document.getElementById(`tab-${tabId}`);
+      if (targetTab) {
+        targetTab.classList.add('active');
+      }
+      
+      // Redraw graphics/charts if needed
+      if (tabId === 'memory') {
+        setTimeout(() => {
+          if (window.ArkCoreApp && state.graph) {
+            drawGraph();
+          }
+        }, 50);
+      } else if (tabId === 'telemetry') {
+        setTimeout(() => {
+          updateSparks();
+        }, 50);
+      }
+    }
+
+    // Set up click listeners for the sidebar nav buttons
+    document.querySelectorAll('.nav-links button').forEach(button => {
+      button.addEventListener('click', (e) => {
+        const tabId = button.getAttribute('data-tab');
+        switchTab(tabId, button);
+      });
+    });
+
+    // ─── Video Feed & Bounding Box Overlay ───────────────────────────────────
+    const video = document.getElementById('liveVideo');
+    const canvas = document.getElementById('overlayCanvas');
+    const ctx = canvas.getContext('2d');
+    const visionLog = document.getElementById('visionLog');
+    const feedTs = document.getElementById('feedTimestamp');
+
+    let currentBoxes = [];
+    let boxTimestamp = 0;
+    let totalDetections = 0;
+    let totalThreats = 0;
+    let lastDetectionTime = 0;
+
+    // Accurate canvas sizing via ResizeObserver — handles flex/grid layout reflows
+    function syncCanvasSize() {
+      const rect = video.getBoundingClientRect();
+      const w = Math.round(rect.width);
+      const h = Math.round(rect.height);
+      if (w > 0 && h > 0 && (canvas.width !== w || canvas.height !== h)) {
+        canvas.width = w;
+        canvas.height = h;
+      }
+    }
+
+    const ro = new ResizeObserver(() => syncCanvasSize());
+    ro.observe(video);
+    // Also sync on window resize
+    window.addEventListener('resize', syncCanvasSize);
+    // Attempt initial sync after layout settles
+    setTimeout(syncCanvasSize, 200);
+    setTimeout(syncCanvasSize, 800);
+
+    // Update the timestamp overlay
+    setInterval(() => {
+      feedTs.textContent = new Date().toLocaleTimeString();
+    }, 1000);
+
+    // Bounding box colors based on confidence
+    function boxColor(confidence) {
+      if (confidence >= 0.8) return { stroke: 'rgba(255, 50, 50, 0.9)', bg: 'rgba(255, 30, 30, 0.75)' };
+      if (confidence >= 0.5) return { stroke: 'rgba(255, 180, 50, 0.9)', bg: 'rgba(200, 130, 20, 0.75)' };
+      return { stroke: 'rgba(50, 200, 255, 0.9)', bg: 'rgba(20, 140, 200, 0.75)' };
+    }
+
+    function drawBoundingBoxes() {
+      // Ensure canvas matches video dimensions every frame
+      syncCanvasSize();
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      if (canvas.width > 0 && canvas.height > 0 && currentBoxes.length > 0) {
+        const age = Date.now() - boxTimestamp;
+        const alpha = Math.max(0, 1 - (age / 12000)); // fade over 12s
+
+        if (alpha > 0) {
+          ctx.save();
+          ctx.globalAlpha = alpha;
+
+          currentBoxes.forEach(box => {
+            // Clamp coordinates to valid range
+            const bx = Math.max(0, Math.min(0.98, box.x || 0));
+            const by = Math.max(0, Math.min(0.98, box.y || 0));
+            const bw = Math.max(0.02, Math.min(1 - bx, box.w || 0.1));
+            const bh = Math.max(0.02, Math.min(1 - by, box.h || 0.1));
+
+            const px = bx * canvas.width;
+            const py = by * canvas.height;
+            const pw = bw * canvas.width;
+            const ph = bh * canvas.height;
+            const colors = boxColor(box.confidence || 0.5);
+
+            // Corner bracket style (tactical SOC look)
+            const cornerLen = Math.min(pw, ph) * 0.22;
+            ctx.strokeStyle = colors.stroke;
+            ctx.lineWidth = 2.5;
+            ctx.lineCap = 'square';
+
+            // Top-left
+            ctx.beginPath(); ctx.moveTo(px, py + cornerLen); ctx.lineTo(px, py); ctx.lineTo(px + cornerLen, py); ctx.stroke();
+            // Top-right
+            ctx.beginPath(); ctx.moveTo(px + pw - cornerLen, py); ctx.lineTo(px + pw, py); ctx.lineTo(px + pw, py + cornerLen); ctx.stroke();
+            // Bottom-left
+            ctx.beginPath(); ctx.moveTo(px, py + ph - cornerLen); ctx.lineTo(px, py + ph); ctx.lineTo(px + cornerLen, py + ph); ctx.stroke();
+            // Bottom-right
+            ctx.beginPath(); ctx.moveTo(px + pw - cornerLen, py + ph); ctx.lineTo(px + pw, py + ph); ctx.lineTo(px + pw, py + ph - cornerLen); ctx.stroke();
+
+            // Thin full border
+            ctx.strokeStyle = colors.stroke.replace(/[\d.]+\)$/, '0.25)');
+            ctx.lineWidth = 1;
+            ctx.strokeRect(px, py, pw, ph);
+
+            // Label
+            const label = `${(box.label || 'OBJECT').toUpperCase()} ${Math.round((box.confidence || 0) * 100)}%`;
+            ctx.font = 'bold 11px "Space Grotesk", ui-monospace, monospace';
+            const textWidth = ctx.measureText(label).width;
+            const labelH = 18;
+            const labelTop = py > labelH + 2 ? py - labelH - 2 : py + ph + 2;
+
+            ctx.fillStyle = colors.bg;
+            ctx.fillRect(px, labelTop, textWidth + 12, labelH);
+            ctx.fillStyle = '#fff';
+            ctx.fillText(label, px + 6, labelTop + 13);
+          });
+
+          ctx.restore();
+        }
+      }
+
+      requestAnimationFrame(drawBoundingBoxes);
+    }
+
+    // Start the draw loop immediately — doesn't depend on video play state
+    drawBoundingBoxes();
+
+    // ─── SSE Detection Listener ───────────────────────────────────────────────
+    // Attach SSE listeners with retry until state.sse is live
+    function attachDetectionListeners() {
+      if (!state.sse || state.sse.readyState === EventSource.CLOSED) {
+        setTimeout(attachDetectionListeners, 150);
+        return;
+      }
+
+      state.sse.addEventListener('detection', (ev) => {
+        try {
+          const msg = JSON.parse(ev.data);
+          const payload = msg.payload || {};
+          const boxes = payload.boxes || [];
+
+          if (boxes.length > 0) {
+            currentBoxes = boxes;
+            boxTimestamp = Date.now();
+            totalDetections++;
+
+            document.getElementById('detTotal').textContent = totalDetections;
+            document.getElementById('detBoxes').textContent = boxes.length;
+
+            const now = Date.now();
+            if (lastDetectionTime > 0) {
+              const interval = (now - lastDetectionTime) / 1000;
+              document.getElementById('detFPS').textContent = `1/${Math.round(interval)}s`;
+            }
+            lastDetectionTime = now;
+
+            // Vision log
+            const labels = boxes.map(b => `  ${b.label} (${Math.round((b.confidence||0)*100)}%) @ [${(b.x||0).toFixed(2)}, ${(b.y||0).toFixed(2)}]`).join('\n');
+            const ts = new Date().toLocaleTimeString();
+            visionLog.textContent = `[${ts}] Detection #${totalDetections} — ${boxes.length} object(s)\n${labels}\n\n` + visionLog.textContent;
+            visionLog.textContent = visionLog.textContent.split('\n').slice(0, 120).join('\n');
+          }
+        } catch(e) { console.warn('detection parse error', e); }
+      });
+
+      state.sse.addEventListener('ingest', (ev) => {
+        try {
+          const msg = JSON.parse(ev.data);
+          const event = msg.payload?.event;
+          if (event && event.source === 'camera_harness') {
+            totalThreats++;
+            document.getElementById('detThreats').textContent = totalThreats;
+
+            const ts = new Date().toLocaleTimeString();
+            visionLog.textContent = `[${ts}] ⚠ THREAT ALERT: ${event.id} — ${event.description}\n\n` + visionLog.textContent;
+          }
+        } catch(e) {}
+      });
+    }
+
+    // Poll /api/detections on startup to immediately display any cached boxes
+    async function loadInitialDetections() {
+      try {
+        const res = await fetch('/api/detections');
+        const data = await res.json();
+        if (data.boxes && data.boxes.length > 0) {
+          currentBoxes = data.boxes;
+          boxTimestamp = Date.now() - 1000; // treat as 1s old
+          document.getElementById('detTotal').textContent = 1;
+          document.getElementById('detBoxes').textContent = data.boxes.length;
+          const labels = data.boxes.map(b => `  ${b.label} (${Math.round((b.confidence||0)*100)}%)`).join('\n');
+          visionLog.textContent = `[startup] Last known detection:\n${labels}\n\n` + visionLog.textContent;
+        }
+      } catch(e) { /* no-op */ }
+    }
+
+    // Initialize core application — then attach SSE listeners
+    // init() may return void, so we handle both promise and non-promise
+    const initResult = ArkCoreApp.init();
+    if (initResult && typeof initResult.then === 'function') {
+      initResult.then(() => {
+        attachDetectionListeners();
+        loadInitialDetections();
+      });
+    } else {
+      // init() is sync or returns void — give SSE a moment to connect
+      setTimeout(() => {
+        attachDetectionListeners();
+        loadInitialDetections();
+      }, 300);
+    }
+  </script>
 </body>
 </html>

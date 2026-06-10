@@ -76,7 +76,7 @@ function renderReports(){
     `;
   }).join("");
 
-  root.querySelectorAll(".report").forEach((el)=>el.addEventListener("click",()=>{const id=el.getAttribute("data-event");const r=state.reports.find((x)=>x.event_id===id);if(r){state.graph=r.memory_graph||{nodes:[],edges:[]};drawGraph();}}));
+  root.querySelectorAll(".report").forEach((el)=>el.addEventListener("click",()=>{const id=el.getAttribute("data-event");const r=state.reports.find((x)=>x.event_id===id);if(r){state.graph=r.memory_graph||{nodes:[],edges:[]};drawGraph();if(window.switchTab)window.switchTab("memory");}}));
 }
 
 function graphDetails(g){
@@ -171,7 +171,7 @@ function handleStream(type,p){
     }
   }
   if(type==="processing"){if(p.eventId){state.statuses[p.eventId]=p.stage==="queued"?"queued":"processing";renderEvents();}log(`processing ${p.eventId||"batch"} ${p.stage||""}`)}
-  if(type==="report"&&p.report){const r=p.report;state.reports.unshift(r);state.statuses[r.event_id]="complete";markEventComplete(r.event_id);renderReports();state.graph=r.memory_graph||{nodes:[],edges:[]};drawGraph();log(`report complete ${r.event_id}`)}
+  if(type==="report"&&p.report){const r=p.report;state.reports.unshift(r);state.statuses[r.event_id]="complete";markEventComplete(r.event_id);renderReports();state.graph=r.memory_graph||{nodes:[],edges:[]};drawGraph();if(window.switchTab)window.switchTab("reports");log(`report complete ${r.event_id}`)}
   if(type==="stats"){if(p.stats)state.stats=p.stats;if(p.telemetry)state.telemetry=p.telemetry;updateHeaderStats();updateSparks();}
   if(type==="error"){if(p.eventId)state.statuses[p.eventId]="failed";renderEvents();log(`error ${p.eventId||""} ${p.message||""}`)}
 }
@@ -197,5 +197,5 @@ function wireCommonButtons(){
   window.addEventListener("resize",()=>{drawGraph();updateSparks();});
 }
 
-async function init(){wireCommonButtons();await bootstrap();connectSSE();log("Ark Core live stream connected");}
+async function init(){wireCommonButtons();await bootstrap();connectSSE();log("Ark Core live stream connected");return Promise.resolve();}
 window.ArkCoreApp={init,runNext,runAll};
