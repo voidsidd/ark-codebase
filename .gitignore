@@ -24,13 +24,10 @@ frontend/.vite/
 .env.development
 *.env
 earth-engine-*.json
+config/secrets/
 service-account-*.json
 *-credentials.json
 *.json.key
-
-# ─── Supabase ────────────────────────────────────────────────────────────────
-supabase/.branches/
-supabase/.temp/
 
 # ─── Logs ────────────────────────────────────────────────────────────────────
 *.log

@@ -1,9 +1,9 @@
 {
   "name": "vanguard-root",
   "version": "1.0.0",
-  "main": "backend/server.js",
+  "main": "ark_core/src/server.ts",
   "scripts": {
-    "start": "node backend/server.js",
+    "start": "cd ark_core && npm start",
     "prepare": "husky"
   },
   "dependencies": {

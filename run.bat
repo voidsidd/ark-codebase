@@ -1,0 +1,9 @@
+@echo off
+echo Starting Ark Core System...
+
+echo Starting Backend Ingestion Pipeline...
+start "Ark Core Sensor" cmd /c "cd sensor && python times_square_sensor.py ../times_square_earthcam.mp4"
+
+echo Starting Frontend Server...
+cd ark_core
+npm run start
