@@ -1,8 +1,8 @@
 FROM node:20-bullseye
 
-# Install Python, pip, curl
+# Install Python and pip
 RUN apt-get update && \
-    apt-get install -y python3 python3-pip libgl1-mesa-glx libglib2.0-0 curl && \
+    apt-get install -y python3 python3-pip libgl1-mesa-glx libglib2.0-0 && \
     rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
@@ -24,12 +24,6 @@ COPY start.sh /app/
 RUN chmod +x /app/start.sh
 
 WORKDIR /app
-
-# Download the MP4 from public GCS URL at build time
-ARG MP4_URL=https://storage.googleapis.com/ark-adk-artifacts-sidzy4-ark-codebase/media/times_square_earthcam.mp4
-RUN curl -L --fail --silent --show-error -o /app/times_square_earthcam.mp4 "$MP4_URL" \
-    && echo "MP4 downloaded: $(du -h /app/times_square_earthcam.mp4 | cut -f1)" \
-    || echo "WARNING: MP4 download failed — sensor will run in simulation mode"
 
 EXPOSE 3000
 CMD ["/app/start.sh"]
