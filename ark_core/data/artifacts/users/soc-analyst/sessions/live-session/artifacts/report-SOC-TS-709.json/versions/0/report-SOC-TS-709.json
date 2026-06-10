@@ -1,0 +1,155 @@
+{
+  "event_id": "SOC-TS-709",
+  "severity": "medium",
+  "summary": "camera_threat_detected at Times Square matches a previously observed operational risk pattern and is likely not isolated.",
+  "pattern": "Recurrence detected: 5 similar memory hits; behavior indicates repeatable access-control weakness at Times Square.",
+  "recommended_action": "Queue targeted follow-up at Times Square and monitor for recurrence in next 24 hours.",
+  "model_used": "sim/gemini-2.5-flash",
+  "cost_usd": 0.000104,
+  "latency_ms": 184,
+  "timestamp": "2026-06-09T14:24:23.075Z",
+  "memory_hits": [
+    {
+      "id": "SOC-TS-708-sim-1781015055056",
+      "text": "Incident SOC-TS-708 | Source: camera_harness_sim | Location: Times Square | Type: camera_threat_detected | Severity: high | Summary: camera_threat_detected at Times Square matches a previously observed operational risk pattern and is likely not isolated.",
+      "timestamp": "2026-06-09T19:54:15.053217Z",
+      "location": "Times Square",
+      "source": "camera_harness_sim",
+      "severity": "high",
+      "similarity": 0.4
+    },
+    {
+      "id": "SOC-TS-707-sim-1781015047049",
+      "text": "Incident SOC-TS-707 | Source: camera_harness_sim | Location: Times Square | Type: camera_threat_detected | Severity: medium | Summary: camera_threat_detected at Times Square matches a previously observed operational risk pattern and is likely not isolated.",
+      "timestamp": "2026-06-09T19:54:07.043777Z",
+      "location": "Times Square",
+      "source": "camera_harness_sim",
+      "severity": "medium",
+      "similarity": 0.4
+    },
+    {
+      "id": "SOC-TS-706-sim-1781015039036",
+      "text": "Incident SOC-TS-706 | Source: camera_harness_sim | Location: Times Square | Type: camera_threat_detected | Severity: high | Summary: camera_threat_detected at Times Square matches a previously observed operational risk pattern and is likely not isolated.",
+      "timestamp": "2026-06-09T19:53:59.032926Z",
+      "location": "Times Square",
+      "source": "camera_harness_sim",
+      "severity": "high",
+      "similarity": 0.4
+    },
+    {
+      "id": "SOC-TS-705-sim-1781015031019",
+      "text": "Incident SOC-TS-705 | Source: camera_harness_sim | Location: Times Square | Type: camera_threat_detected | Severity: medium | Summary: camera_threat_detected at Times Square matches a previously observed operational risk pattern and is likely not isolated.",
+      "timestamp": "2026-06-09T19:53:51.015449Z",
+      "location": "Times Square",
+      "source": "camera_harness_sim",
+      "severity": "medium",
+      "similarity": 0.4
+    },
+    {
+      "id": "SOC-TS-704-sim-1781015023013",
+      "text": "Incident SOC-TS-704 | Source: camera_harness_sim | Location: Times Square | Type: camera_threat_detected | Severity: high | Summary: camera_threat_detected at Times Square matches a previously observed operational risk pattern and is likely not isolated.",
+      "timestamp": "2026-06-09T19:53:43.003229Z",
+      "location": "Times Square",
+      "source": "camera_harness_sim",
+      "severity": "high",
+      "similarity": 0.4
+    }
+  ],
+  "memory_graph": {
+    "nodes": [
+      {
+        "id": "SOC-TS-709",
+        "label": "camera_threat_detected @ Times Square",
+        "timestamp": "2026-06-09T19:54:23.066913Z",
+        "severity": "medium",
+        "source": "camera_harness_sim",
+        "location": "Times Square",
+        "is_current": true
+      },
+      {
+        "id": "SOC-TS-708-sim-1781015055056",
+        "label": "Incident SOC-TS-708 | Source: camera_harness_sim | Location: Times Square | Type",
+        "timestamp": "2026-06-09T19:54:15.053217Z",
+        "severity": "high",
+        "source": "camera_harness_sim",
+        "location": "Times Square",
+        "is_current": false
+      },
+      {
+        "id": "SOC-TS-707-sim-1781015047049",
+        "label": "Incident SOC-TS-707 | Source: camera_harness_sim | Location: Times Square | Type",
+        "timestamp": "2026-06-09T19:54:07.043777Z",
+        "severity": "medium",
+        "source": "camera_harness_sim",
+        "location": "Times Square",
+        "is_current": false
+      },
+      {
+        "id": "SOC-TS-706-sim-1781015039036",
+        "label": "Incident SOC-TS-706 | Source: camera_harness_sim | Location: Times Square | Type",
+        "timestamp": "2026-06-09T19:53:59.032926Z",
+        "severity": "high",
+        "source": "camera_harness_sim",
+        "location": "Times Square",
+        "is_current": false
+      },
+      {
+        "id": "SOC-TS-705-sim-1781015031019",
+        "label": "Incident SOC-TS-705 | Source: camera_harness_sim | Location: Times Square | Type",
+        "timestamp": "2026-06-09T19:53:51.015449Z",
+        "severity": "medium",
+        "source": "camera_harness_sim",
+        "location": "Times Square",
+        "is_current": false
+      },
+      {
+        "id": "SOC-TS-704-sim-1781015023013",
+        "label": "Incident SOC-TS-704 | Source: camera_harness_sim | Location: Times Square | Type",
+        "timestamp": "2026-06-09T19:53:43.003229Z",
+        "severity": "high",
+        "source": "camera_harness_sim",
+        "location": "Times Square",
+        "is_current": false
+      }
+    ],
+    "edges": [
+      {
+        "id": "SOC-TS-709-SOC-TS-708-sim-1781015055056",
+        "source": "SOC-TS-709",
+        "target": "SOC-TS-708-sim-1781015055056",
+        "weight": 1,
+        "reason": "event correlation"
+      },
+      {
+        "id": "SOC-TS-709-SOC-TS-707-sim-1781015047049",
+        "source": "SOC-TS-709",
+        "target": "SOC-TS-707-sim-1781015047049",
+        "weight": 0.85,
+        "reason": "event correlation"
+      },
+      {
+        "id": "SOC-TS-709-SOC-TS-706-sim-1781015039036",
+        "source": "SOC-TS-709",
+        "target": "SOC-TS-706-sim-1781015039036",
+        "weight": 0.7,
+        "reason": "event correlation"
+      },
+      {
+        "id": "SOC-TS-709-SOC-TS-705-sim-1781015031019",
+        "source": "SOC-TS-709",
+        "target": "SOC-TS-705-sim-1781015031019",
+        "weight": 0.55,
+        "reason": "event correlation"
+      },
+      {
+        "id": "SOC-TS-709-SOC-TS-704-sim-1781015023013",
+        "source": "SOC-TS-709",
+        "target": "SOC-TS-704-sim-1781015023013",
+        "weight": 0.4,
+        "reason": "event correlation"
+      }
+    ]
+  },
+  "memory_context": "1. [2026-06-09T19:54:15.053217Z] (camera_harness_sim) Times Square: Incident SOC-TS-708 | Source: camera_harness_sim | Location: Times Square | Type: camera_threat_detected | Severity: high | Summary: camera_threat_detected at Times Square matches a previously observed operational risk pattern and is likely not isolated.\n2. [2026-06-09T19:54:07.043777Z] (camera_harness_sim) Times Square: Incident SOC-TS-707 | Source: camera_harness_sim | Location: Times Square | Type: camera_threat_detected | Severity: medium | Summary: camera_threat_detected at Times Square matches a previously observed operational risk pattern and is likely not isolated.\n3. [2026-06-09T19:53:59.032926Z] (camera_harness_sim) Times Square: Incident SOC-TS-706 | Source: camera_harness_sim | Location: Times Square | Type: camera_threat_detected | Severity: high | Summary: camera_threat_detected at Times Square matches a previously observed operational risk pattern and is likely not isolated.\n4. [2026-06-09T19:53:51.015449Z] (camera_harness_sim) Times Square: Incident SOC-TS-705 | Source: camera_harness_sim | Location: Times Square | Type: camera_threat_detected | Severity: medium | Summary: camera_threat_detected at Times Square matches a previously observed operational risk pattern and is likely not isolated.\n5. [2026-06-09T19:53:43.003229Z] (camera_harness_sim) Times Square: Incident SOC-TS-704 | Source: camera_harness_sim | Location: Times Square | Type: camera_threat_detected | Severity: high | Summary: camera_threat_detected at Times Square matches a previously observed operational risk pattern and is likely not isolated.",
+  "confidence": 0.88
+}

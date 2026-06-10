@@ -1,0 +1,28 @@
+{
+  "event_id": "SOC-TS-702",
+  "severity": "high",
+  "summary": "camera_threat_detected at Times Square appears as a new anomaly requiring controlled verification.",
+  "pattern": "No strong historical recurrence found; monitor this anomaly for repeat signatures across shift windows.",
+  "recommended_action": "Initiate priority incident workflow at Times Square with immediate on-site verification and SOC escalation.",
+  "model_used": "sim/gemini-1.5-pro",
+  "cost_usd": 0.001644,
+  "latency_ms": 382,
+  "timestamp": "2026-06-09T14:49:35.900Z",
+  "memory_hits": [],
+  "memory_graph": {
+    "nodes": [
+      {
+        "id": "SOC-TS-702",
+        "label": "camera_threat_detected @ Times Square",
+        "timestamp": "2026-06-09T20:18:50.768321Z",
+        "severity": "high",
+        "source": "camera_harness_sim",
+        "location": "Times Square",
+        "is_current": true
+      }
+    ],
+    "edges": []
+  },
+  "memory_context": "No prior correlated incidents found.",
+  "confidence": 0.88
+}

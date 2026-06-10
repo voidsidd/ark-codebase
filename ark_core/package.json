@@ -1,0 +1,27 @@
+{
+  "name": "ark-core",
+  "version": "1.0.0",
+  "main": "dist/index.js",
+  "scripts": {
+    "start": "ts-node src/index.ts",
+    "build": "tsc",
+    "dev": "nodemon --exec ts-node src/index.ts"
+  },
+  "dependencies": {
+    "@google-cloud/bigquery": "^8.3.1",
+    "@google-cloud/pubsub": "^5.3.1",
+    "@google/adk": "^1.2.0",
+    "@google/generative-ai": "^0.24.1",
+    "cors": "latest",
+    "dotenv": "latest",
+    "express": "latest"
+  },
+  "devDependencies": {
+    "@types/cors": "latest",
+    "@types/express": "latest",
+    "@types/node": "latest",
+    "nodemon": "latest",
+    "ts-node": "latest",
+    "typescript": "latest"
+  }
+}
