@@ -231,8 +231,9 @@ async def process_video_feed(video_source, camera_id="CAM-TS-01", zone="Times Sq
                 boxes = result.get("bounding_boxes", [])
                 push_detections(boxes, frame_time)
 
-                # Only create a SIEM event if a threat is actually detected
-                if result.get("threat_detected", False) and result.get("anomaly_score", 0) >= 30:
+                # Create a SIEM event if a threat is detected OR if there are any detections (to keep dashboard alive)
+                is_threat = result.get("threat_detected", False)
+                if is_threat or len(boxes) > 0:
                     event_counter += 1
                     event_id = f"SOC-TS-{event_counter}"
 
@@ -241,6 +242,8 @@ async def process_video_feed(video_source, camera_id="CAM-TS-01", zone="Times Sq
                     severity_raw = result.get('severity', 'low').lower()
                     if severity_raw == 'critical':
                         severity_raw = 'high'
+                    if not is_threat:
+                        severity_raw = 'low'
 
                     siem_event = {
                         "id": event_id,
@@ -249,7 +252,7 @@ async def process_video_feed(video_source, camera_id="CAM-TS-01", zone="Times Sq
                         "location": zone,
                         "event_type": f"camera_{'threat' if severity_raw == 'high' else 'anomaly'}_detected",
                         "severity": severity_raw,
-                        "description": f"Gemini Vision: {result.get('description', 'Anomaly detected')}",
+                        "description": f"Gemini Vision: {result.get('description', 'Detected objects in frame')}",
                         "sensor_id": camera_id,
                         "snapshot_url": snapshot_url,
                         "bounding_boxes": boxes
