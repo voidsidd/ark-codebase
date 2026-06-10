@@ -25,10 +25,8 @@ RUN chmod +x /app/start.sh
 
 WORKDIR /app
 
-# Download the MP4 from GitHub Releases
-RUN curl -L --fail -o /app/times_square_earthcam.mp4 \
-    "https://github.com/voidsidd/ark-codebase/releases/download/v1.0-media/times_square_earthcam.mp4" \
-    && echo "MP4 downloaded: $(du -h /app/times_square_earthcam.mp4 | cut -f1)"
+# Copy the MP4 directly (managed via Git LFS)
+COPY times_square_earthcam.mp4 /app/times_square_earthcam.mp4
 
 EXPOSE 3000
 CMD ["/app/start.sh"]
