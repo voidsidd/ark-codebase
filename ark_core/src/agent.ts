@@ -1,6 +1,7 @@
 import { recallSimilarIncidents, storeIncident } from "./memory";
 import { routedCompletion } from "./router";
-import { AgentStats, IncidentReport, SiemEvent, TelemetryPoint } from "./types";
+import { AgentStats, IncidentCorrelation, IncidentReport, SiemEvent, TelemetryPoint } from "./types";
+import fs from "fs";
 import path from "path";
 
 // ─── GCP BigQuery (optional — gracefully skipped if unconfigured) ────────────
@@ -65,17 +66,58 @@ try {
 }
 
 // ─── In-memory state ─────────────────────────────────────────────────────────
-const stats: AgentStats = {
-  total_incidents: 0,
-  total_cost_usd: 0,
-  avg_latency_ms: 0,
-  model_breakdown: {},
-  memory_hits: 0,
-  high_severity_incidents: 0
-};
+const runtimeDir = path.join(__dirname, "..", "data", "runtime");
+const agentStatePath = path.join(runtimeDir, "agent-state.json");
 
-const telemetry: TelemetryPoint[] = [];
-const reports: IncidentReport[] = [];
+interface AgentRuntimeState {
+  stats: AgentStats;
+  telemetry: TelemetryPoint[];
+  reports: IncidentReport[];
+}
+
+function createDefaultStats(): AgentStats {
+  return {
+    total_incidents: 0,
+    total_cost_usd: 0,
+    avg_latency_ms: 0,
+    model_breakdown: {},
+    memory_hits: 0,
+    high_severity_incidents: 0
+  };
+}
+
+function loadAgentState(): AgentRuntimeState {
+  try {
+    if (!fs.existsSync(agentStatePath)) {
+      return { stats: createDefaultStats(), telemetry: [], reports: [] };
+    }
+
+    const raw = fs.readFileSync(agentStatePath, "utf8");
+    const parsed = JSON.parse(raw) as Partial<AgentRuntimeState>;
+    return {
+      stats: parsed.stats ?? createDefaultStats(),
+      telemetry: Array.isArray(parsed.telemetry) ? parsed.telemetry : [],
+      reports: Array.isArray(parsed.reports) ? parsed.reports : []
+    };
+  } catch (error) {
+    console.error("[Agent] Failed to load persisted runtime state:", error);
+    return { stats: createDefaultStats(), telemetry: [], reports: [] };
+  }
+}
+
+function persistAgentState(): void {
+  try {
+    fs.mkdirSync(runtimeDir, { recursive: true });
+    fs.writeFileSync(agentStatePath, JSON.stringify({ stats, telemetry, reports }, null, 2), "utf8");
+  } catch (error) {
+    console.error("[Agent] Failed to persist runtime state:", error);
+  }
+}
+
+const initialState = loadAgentState();
+let stats: AgentStats = initialState.stats;
+let telemetry: TelemetryPoint[] = initialState.telemetry;
+let reports: IncidentReport[] = initialState.reports;
 
 // ─── LLM output parser ────────────────────────────────────────────────────────
 function parseModelOutput(text: string): { summary: string; pattern: string; action: string; confidence: number } {
@@ -180,6 +222,8 @@ export async function processEvent(event: SiemEvent): Promise<IncidentReport> {
   reports.unshift(report);
   while (reports.length > 80) reports.pop();
 
+  persistAgentState();
+
   // Persist to memory store
   await storeIncident(event, report);
 
@@ -223,4 +267,20 @@ export function getTelemetry(): TelemetryPoint[] {
 
 export function getRecentReports(): IncidentReport[] {
   return [...reports];
+}
+
+export function updateIncidentReport(eventId: string, patch: Partial<IncidentReport> & { correlation?: IncidentCorrelation }): IncidentReport | null {
+  const index = reports.findIndex((entry) => entry.event_id === eventId);
+  if (index < 0) {
+    return null;
+  }
+
+  reports[index] = {
+    ...reports[index],
+    ...patch,
+    correlation: patch.correlation ?? reports[index].correlation
+  };
+
+  persistAgentState();
+  return { ...reports[index] };
 }

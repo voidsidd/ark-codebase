@@ -1,4 +1,4 @@
-const state={events:[],reports:[],stats:{total_incidents:0,total_cost_usd:0,avg_latency_ms:0,memory_hits:0},telemetry:[],statuses:{},graph:{nodes:[],edges:[]},sse:null,counters:{},pendingRemoval:new Set(),hiddenCompleted:new Set()};
+const state={events:[],reports:[],timeline:[],tracks:[],zones:{},stats:{total_incidents:0,total_cost_usd:0,avg_latency_ms:0,memory_hits:0},telemetry:[],statuses:{},graph:{nodes:[],edges:[]},sse:null,counters:{},pendingRemoval:new Set(),hiddenCompleted:new Set()};
 const safe=(v)=>String(v??"").replace(/[<>&]/g,(s)=>({"<":"&lt;",">":"&gt;","&":"&amp;"}[s]));
 const money=(v)=>`$${Number(v||0).toFixed(5)}`;
 const fmtTime=(v)=>{try{return new Date(v).toLocaleString();}catch{return String(v||"–")}};
@@ -99,6 +99,7 @@ function renderReports(){
     const hitsCount = Array.isArray(r.memory_hits) ? r.memory_hits.length : 0;
     const snapshotImg = event?.snapshot_url ? `<img src="${safe(parseImageUrl(event.snapshot_url))}" alt="Threat Snapshot" style="width:100%;border-radius:4px;margin-top:10px;"/>` : '';
     const memHint = hitsCount > 0 ? `<div style="font-size:10px;color:#4ec9b0;margin-bottom:6px;">⬡ ${hitsCount} memory correlation${hitsCount>1?'s':''} found — click to view graph</div>` : '';
+    const corrHint = r.correlation ? `<div style="font-size:10px;color:#9cdcfe;margin-bottom:6px;">⛭ ${safe(r.correlation.summary||"Live correlation attached")}</div>` : '';
     return `
       <article class="report" data-event="${safe(r.event_id)}" style="cursor:pointer;">
         <div class="r-top"><span>${safe(r.event_id)}</span><span>${safe(fmtTime(r.timestamp))}</span></div>
@@ -109,6 +110,7 @@ function renderReports(){
         <div class="r-text r-pattern">${safe(r.pattern)}</div>
         <div class="r-label">Recommended Action Plan</div>
         <div class="r-text">${safe(r.recommended_action)}</div>
+        ${corrHint}
         ${memHint}
         <div class="r-foot">${safe(r.model_used)} · ${Math.round(r.latency_ms)}ms · ${money(r.cost_usd)} · ${Math.round((Number(r.confidence||0))*100)}% confidence</div>
       </article>
@@ -124,6 +126,51 @@ function renderReports(){
       if(window.switchTab)window.switchTab("memory");
     }
   }));
+}
+
+function renderZoneSummary(){
+  const root=document.getElementById("zoneSummary");if(!root)return;
+  const zones=Object.values(state.zones||{});
+  if(!zones.length){
+    root.innerHTML=`<div class="event-desc">No zone status has been received yet.</div>`;
+    return;
+  }
+
+  root.innerHTML=zones.map((z)=>{
+    const risk=z.threat_level||"low";
+    return `
+      <div class="zone-pill zone-${safe(risk)}">
+        <div class="zone-pill-title">${safe(z.zone||"unknown")}</div>
+        <div class="zone-pill-meta">${safe(z.camera_id||"camera")} · ${safe(z.summary||"no summary")}</div>
+        <div class="zone-pill-meta">${safe(z.active_tracks||0)} tracks · ${safe(z.person_count||0)} people · ${safe(z.vehicle_count||0)} vehicles · ${safe(z.suspicious_count||0)} suspicious</div>
+      </div>
+    `;
+  }).join("");
+}
+
+function renderTimeline(){
+  const root=document.getElementById("timelineList");if(!root)return;
+  const count=document.getElementById("timelineCount");if(count)count.textContent=`${state.timeline.length} entries`;
+  renderZoneSummary();
+  if(!state.timeline.length){
+    root.innerHTML=`<div class="event-desc">No detection timeline yet.</div>`;
+    return;
+  }
+
+  root.innerHTML=state.timeline.map((entry)=>{
+    const kind=entry.kind||"detection";
+    return `
+      <article class="timeline-item timeline-${safe(kind)}">
+        <div class="timeline-top">
+          <span class="timeline-kind">${safe(kind)}</span>
+          <span class="timeline-ts">${safe(fmtTime(entry.timestamp))}</span>
+        </div>
+        <div class="timeline-title">${safe(entry.title)}</div>
+        <div class="timeline-meta">${safe(entry.zone||"unknown zone")} · ${safe(entry.camera_id||"unknown camera")} · ${safe(entry.severity||"low")}</div>
+        <div class="timeline-detail">${safe(entry.detail||"")}</div>
+      </article>
+    `;
+  }).join("");
 }
 
 function graphDetails(g){
@@ -216,21 +263,48 @@ function handleStream(type,p){
       state.events.unshift(p.event);
       state.statuses[p.event.id]="idle";
       renderEvents();
-      log(`📡 Ingest: ${p.event.id} [${p.event.severity}] ${p.event.description?.slice(0,60)}`);
+      const analysisState = String(p.event.analysis_state || "").toLowerCase();
+      if(p.event.source === "camera_harness" && analysisState && analysisState !== "active"){
+        const retry = Number(p.event.quota_retry_seconds || 0);
+        log(`⚠ Vision ${analysisState}${retry ? ` (${Math.ceil(retry)}s)` : ""}: ${p.event.description?.slice(0,60)}`);
+      }else if(p.event.source === "camera_harness"){
+        const severity = String(p.event.severity || "").toLowerCase();
+        const tag = severity === "high" || severity === "critical" ? "THREAT" : "Vision";
+        log(`📡 ${tag}: ${p.event.id} [${p.event.severity}] ${p.event.description?.slice(0,60)}`);
+      }else{
+        log(`📡 Ingest: ${p.event.id} [${p.event.severity}] ${p.event.description?.slice(0,60)}`);
+      }
     }
   }
   if(type==="processing"){if(p.eventId){state.statuses[p.eventId]=p.stage==="queued"?"queued":"processing";renderEvents();}log(`⚙ Processing ${p.eventId||"batch"} — ${p.stage||""}`)}
   if(type==="report"&&p.report){
     const r=p.report;
-    state.reports.unshift(r);
+    state.reports.unshift(p.correlation ? {...r, correlation:p.correlation} : r);
     state.statuses[r.event_id]="complete";
     markEventComplete(r.event_id);
     renderReports();
+    renderTimeline();
     // Update graph with latest report data automatically
     state.graph=r.memory_graph||{nodes:[],edges:[]};
     drawGraph();
     if(window.switchTab)window.switchTab("reports");
     log(`📋 Report: ${r.event_id} — ${r.severity} · ${Math.round(r.latency_ms)}ms · ${money(r.cost_usd)}`);
+  }
+  if(type==="timeline"){
+    if(Array.isArray(p.entries)){
+      state.timeline=[...p.entries,...state.timeline].slice(0,150);
+      renderTimeline();
+    }
+    if(p.correlation)log(`🧭 Correlated incident ${p.correlation.summary||""}`);
+  }
+  if(type==="tracking"){
+    if(Array.isArray(p.tracks))state.tracks=p.tracks;
+    renderTimeline();
+    if(p.zone)log(`👁 Tracking update for ${p.zone}`);
+  }
+  if(type==="zone_status"){
+    if(p.status&&p.status.zone)state.zones[p.status.zone]=p.status;
+    renderTimeline();
   }
   if(type==="stats"){if(p.stats)state.stats=p.stats;if(p.telemetry)state.telemetry=p.telemetry;updateHeaderStats();updateSparks();}
   if(type==="error"){if(p.eventId)state.statuses[p.eventId]="failed";renderEvents();log(`❌ Error ${p.eventId||""}: ${p.message||""}`)}

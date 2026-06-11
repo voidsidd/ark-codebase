@@ -1,12 +1,27 @@
 import cors from "cors";
 import express from "express";
 import path from "path";
-import { getRecentReports, getStats, getTelemetry, processEvent } from "./agent";
+import { getRecentReports, getStats, getTelemetry, processEvent, updateIncidentReport } from "./agent";
 import { demoEvents } from "./demo-events";
+import {
+  correlateIncident,
+  getDetectionHistory,
+  getIncidentLinks,
+  getLatestDetection,
+  getMonitoringSnapshot,
+  getTimeline,
+  getTrackedObjects,
+  getZoneStatuses,
+  ingestDetection
+} from "./monitoring";
 import { publishRawEvent } from "./pubsub";
 import { StreamEnvelope } from "./types";
 
 const app = express();
+const monitoringControl = {
+  enabled: (process.env.ARK_MONITORING_ENABLED ?? "true").toLowerCase() !== "false",
+  updated_at: new Date().toISOString()
+};
 
 app.use(cors());
 app.use(express.json());
@@ -26,9 +41,6 @@ app.use("/media", express.static(path.join(__dirname, "..", ".."), {
 const clients = new Set<express.Response>();
 let processingChain: Promise<void> = Promise.resolve();
 
-// Latest bounding box detections for real-time overlay
-let latestDetections: { boxes: unknown[]; timestamp: string } = { boxes: [], timestamp: "" };
-
 function streamWrite(res: express.Response, envelope: StreamEnvelope): void {
   res.write(`event: ${envelope.type}\n`);
   res.write(`data: ${JSON.stringify(envelope)}\n\n`);
@@ -46,6 +58,18 @@ function broadcast(type: StreamEnvelope["type"], payload: Record<string, unknown
   }
 }
 
+function getMonitoringControl(): typeof monitoringControl {
+  return { ...monitoringControl };
+}
+
+function setMonitoringControl(enabled: boolean): typeof monitoringControl {
+  monitoringControl.enabled = enabled;
+  monitoringControl.updated_at = new Date().toISOString();
+  const payload = getMonitoringControl();
+  broadcast("monitoring_state", payload);
+  return payload;
+}
+
 setInterval(() => {
   broadcast("heartbeat", { ok: true });
 }, 15000);
@@ -56,6 +80,16 @@ app.get("/", (_req, res) => {
 
 app.get("/api/events", (_req, res) => {
   res.json(demoEvents);
+});
+
+app.get("/api/monitoring", (_req, res) => {
+  res.json(getMonitoringControl());
+});
+
+app.post("/api/monitoring/toggle", (req, res) => {
+  const body = req.body as { enabled?: unknown };
+  const enabled = typeof body?.enabled === "boolean" ? body.enabled : !monitoringControl.enabled;
+  res.json(setMonitoringControl(enabled));
 });
 
 app.post("/api/events", (req, res) => {
@@ -85,14 +119,61 @@ app.post("/api/events", (req, res) => {
 
 // Receive bounding box detections from the Python sensor and broadcast to frontend
 app.post("/api/detections", (req, res) => {
-  const { boxes, timestamp } = req.body || {};
-  latestDetections = { boxes: boxes || [], timestamp: timestamp || new Date().toISOString() };
-  broadcast("detection", { boxes: latestDetections.boxes, timestamp: latestDetections.timestamp });
+  const detection = ingestDetection(req.body || {});
+  broadcast("detection", {
+    detection,
+    boxes: detection.raw_boxes,
+    timestamp: detection.timestamp,
+    camera_id: detection.camera_id,
+    zone: detection.zone,
+    summary: detection.summary,
+    alerts: detection.alerts,
+    threat_level: detection.threat_level,
+    tracked_objects: detection.tracked_objects
+  });
+  broadcast("tracking", { tracks: detection.tracked_objects, zone: detection.zone, camera_id: detection.camera_id });
+  broadcast("zone_status", { status: getZoneStatuses()[detection.zone], detection_id: detection.id });
+  broadcast("timeline", { entries: getTimeline(4), latest_detection: detection.id });
   res.status(200).json({ ok: true });
 });
 
 app.get("/api/detections", (_req, res) => {
-  res.json(latestDetections);
+  const latest = getLatestDetection();
+  if (!latest) {
+    res.json({ boxes: [], timestamp: "", tracked_objects: [], alerts: [], summary: "", threat_level: "low" });
+    return;
+  }
+
+  res.json({
+    ...latest,
+    boxes: latest.raw_boxes
+  });
+});
+
+app.get("/api/detections/history", (req, res) => {
+  const limit = Math.max(1, Math.min(200, Number(req.query.limit ?? 50)));
+  res.json(getDetectionHistory(limit));
+});
+
+app.get("/api/timeline", (req, res) => {
+  const limit = Math.max(1, Math.min(250, Number(req.query.limit ?? 100)));
+  res.json(getTimeline(limit));
+});
+
+app.get("/api/tracks", (_req, res) => {
+  res.json(getTrackedObjects());
+});
+
+app.get("/api/zones", (_req, res) => {
+  res.json(getZoneStatuses());
+});
+
+app.get("/api/state", (_req, res) => {
+  res.json(getMonitoringSnapshot());
+});
+
+app.get("/api/incident-links", (_req, res) => {
+  res.json(getIncidentLinks());
 });
 
 app.get("/api/stats", (_req, res) => {
@@ -119,6 +200,11 @@ app.get("/api/stream", (req, res) => {
     timestamp: new Date().toISOString(),
     payload: { connected: true }
   });
+  streamWrite(res, {
+    type: "monitoring_state",
+    timestamp: new Date().toISOString(),
+    payload: getMonitoringControl()
+  });
 
   req.on("close", () => {
     clients.delete(res);
@@ -136,7 +222,14 @@ async function processAndBroadcast(eventId: string): Promise<void> {
 
   try {
     const report = await processEvent(event);
-    broadcast("report", { report, event });
+    const correlationResult = correlateIncident(event, report);
+    const correlation = correlationResult.correlation;
+    const enrichedReport = updateIncidentReport(event.id, { correlation }) ?? report;
+
+    broadcast("report", { report: enrichedReport, event, correlation });
+    broadcast("timeline", { entries: getTimeline(5), correlation, eventId: event.id });
+    broadcast("tracking", { tracks: getTrackedObjects(), zone: correlation.zone, camera_id: correlation.camera_id });
+    broadcast("zone_status", { status: getZoneStatuses()[correlation.zone], correlation });
     broadcast("stats", { stats: getStats(), telemetry: getTelemetry() });
   } catch (error) {
     broadcast("error", {

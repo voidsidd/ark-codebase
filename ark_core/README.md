@@ -25,6 +25,11 @@ It correlates SIEM-style text alerts from badge readers, door contacts, motion s
 5. Open:
    http://localhost:3000
 
+Vision note:
+- `GEMINI_API_KEYS` can be a comma, semicolon, or newline separated list.
+- Keys from the same Google project share quota, so rotation only helps if the keys come from separate quota pools.
+- When Gemini is rate-limited, the sensor now falls back to local motion boxes and health events so the dashboard stays live.
+
 ## Keyboard Shortcuts
 - `R`: run next queued event
 - `Shift + R`: run full queue

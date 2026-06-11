@@ -9,26 +9,24 @@
   <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet"/>
   <link rel="stylesheet" href="/styles.css"/>
   <style>
-    /* Two-column layout */
-    .dashboard-grid {
-      display: grid;
-      grid-template-columns: 460px 1fr;
-      gap: 16px;
-      min-height: calc(100vh - 110px);
-    }
-    
-    @media (max-width: 1300px) {
-      .dashboard-grid {
-        grid-template-columns: 1fr;
-      }
-    }
-
-    /* Video & vision styling */
-    .video-panel {
+    /* Tab panels fill main content area */
+    .tab-panels {
       display: flex;
       flex-direction: column;
-      gap: 12px;
+      flex: 1;
+      min-height: calc(100vh - 180px);
     }
+
+    .tab-content {
+      display: none;
+      flex: 1;
+      height: 100%;
+    }
+    .tab-content.active {
+      display: flex;
+      flex-direction: column;
+    }
+
     .video-container {
       position: relative;
       width: 100%;
@@ -43,14 +41,16 @@
       width: 100%;
       height: 100%;
       object-fit: cover;
+      position: relative;
+      z-index: 1;
     }
     .video-container canvas {
       position: absolute;
-      top: 0;
-      left: 0;
+      inset: 0;
       width: 100%;
       height: 100%;
       pointer-events: none;
+      z-index: 2;
     }
     .feed-label {
       position: absolute;
@@ -86,6 +86,43 @@
       color: var(--muted);
       font-family: monospace;
       z-index: 10;
+    }
+    .overlay-hud {
+      position: absolute;
+      top: 12px;
+      right: 12px;
+      z-index: 11;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      align-items: flex-end;
+      pointer-events: none;
+    }
+    .overlay-chip {
+      background: rgba(0,0,0,0.7);
+      border: 1px solid rgba(76,201,176,0.45);
+      border-radius: 999px;
+      padding: 4px 10px;
+      font-size: 10px;
+      color: #c9fff1;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+      font-family: monospace;
+    }
+    .monitoring-chip {
+      background: rgba(0,0,0,0.7);
+      border: 1px solid rgba(76,201,176,0.45);
+      border-radius: 999px;
+      padding: 4px 10px;
+      font-size: 10px;
+      color: #c9fff1;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+      font-family: monospace;
+    }
+    .monitoring-chip.is-off {
+      border-color: rgba(255,120,80,0.55);
+      color: #ffd3c6;
     }
 
     /* Video Statistics */
@@ -133,6 +170,65 @@
       border: 1px solid var(--line);
     }
 
+    .timeline-zone-row {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+      gap: 10px;
+    }
+    .zone-card,
+    .timeline-item {
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: rgba(255,255,255,0.02);
+      padding: 12px;
+    }
+    .zone-card[data-risk="high"], .timeline-item.timeline-rule, .timeline-item.timeline-incident {
+      border-color: rgba(255,80,80,0.45);
+      box-shadow: 0 0 0 1px rgba(255,80,80,0.12) inset;
+    }
+    .zone-card[data-risk="medium"], .timeline-item.timeline-tracking {
+      border-color: rgba(255,180,50,0.35);
+    }
+    .zone-card[data-risk="low"], .timeline-item.timeline-detection {
+      border-color: rgba(76,201,176,0.25);
+    }
+    .zone-title, .timeline-title {
+      font-weight: 600;
+      letter-spacing: 0.02em;
+      margin-bottom: 4px;
+    }
+    .zone-meta, .timeline-meta, .timeline-detail {
+      color: var(--muted);
+      font-size: 11px;
+      line-height: 1.5;
+    }
+    .timeline-top {
+      display:flex;
+      justify-content:space-between;
+      gap:10px;
+      align-items:center;
+      margin-bottom:6px;
+      color:var(--faint);
+      text-transform:uppercase;
+      letter-spacing:0.08em;
+      font-size:10px;
+    }
+    .timeline-kind {
+      display:inline-flex;
+      align-items:center;
+      gap:6px;
+      padding:2px 8px;
+      border-radius:999px;
+      background:rgba(255,255,255,0.06);
+      color:#fff;
+    }
+    .timeline-item {
+      margin-bottom:10px;
+    }
+    .timeline-title {
+      font-size: 13px;
+    }
+
     /* Tabs switching styling */
     .tab-content {
       display: none;
@@ -163,8 +259,10 @@
         <p>SOC Intelligence Layer</p>
       </div>
       <div class="nav-links">
-        <button class="nav-item active" data-tab="events">Events Queue</button>
+        <button class="nav-item active" data-tab="video">Video Feeds</button>
+        <button class="nav-item" data-tab="events">Events Queue</button>
         <button class="nav-item" data-tab="reports">Analyst Reports</button>
+        <button class="nav-item" data-tab="timeline">Detection Timeline</button>
         <button class="nav-item" data-tab="memory">Memory Graph</button>
         <button class="nav-item" data-tab="telemetry">System Telemetry</button>
         <button class="nav-item" data-tab="processing">Live Logs</button>
@@ -193,18 +291,26 @@
         <article class="card"><div class="label">Total Cost</div><div class="value" id="mCost">$0.00000</div></article>
         <article class="card"><div class="label">Memory Correlations</div><div class="value" id="mMemory">0</div></article>
       </section>
-
-      <div class="dashboard-grid">
-        <!-- Persistent Left Column: Live Video Analysis -->
-        <div class="video-panel">
-          <div class="panel" style="flex: 1; display: flex; flex-direction: column; gap: 10px;">
+      <div class="tab-panels" style="flex:1;">
+        <!-- Video Feeds Tab (default) -->
+        <div id="tab-video" class="tab-content active" style="height:100%;">
+          <div class="panel page-fill" style="display:flex;flex-direction:column;gap:10px;height:100%;">
             <div class="panel-head">
               <div class="panel-title">Live Vision Stream</div>
+              <div class="row" style="gap:8px;align-items:center;">
+                <div class="live"><span class="dot"></span>CAM-TS-01</div>
+                <button id="monitoringToggleBtn" class="btn" style="padding:6px 12px;">Pause Monitoring</button>
+                <div id="monitoringStateChip" class="monitoring-chip">Monitoring ON</div>
+              </div>
             </div>
             <div class="video-container">
               <div class="feed-label"><span class="rec-dot"></span>CAM-TS-01 · TIMES SQUARE</div>
               <video id="liveVideo" src="/media/times_square_earthcam.mp4" autoplay loop muted playsinline></video>
               <canvas id="overlayCanvas"></canvas>
+              <div class="overlay-hud">
+                <div class="overlay-chip" id="overlayStatus">Overlay idle</div>
+                <div class="overlay-chip" id="overlayTrackCount">0 tracks</div>
+              </div>
               <div class="feed-ts" id="feedTimestamp">--:--:--</div>
             </div>
             <div class="detection-stats">
@@ -220,75 +326,81 @@
           </div>
         </div>
 
-        <!-- Dynamic Right Column: Tabbed Panels -->
-        <div class="tab-panels">
-          <!-- Events Tab -->
-          <div id="tab-events" class="tab-content active" style="height: 100%;">
-            <div class="panel page-fill" style="display: flex; flex-direction: column; height: 100%;">
-              <div class="panel-head">
-                <div class="panel-title">Events Queue</div>
-              </div>
-              <div id="eventProgressNote" class="event-desc" style="margin-bottom:8px"></div>
-              <div id="eventList" class="scroll-col" style="flex: 1;"></div>
-              <div class="row" style="margin-top: 10px;">
-                <button id="runNextBtn" class="btn">Run Next</button>
-                <button id="runAllBtn" class="btn">Run All</button>
-              </div>
+        <!-- Events Tab -->
+        <div id="tab-events" class="tab-content" style="height:100%;">
+          <div class="panel page-fill" style="display:flex;flex-direction:column;height:100%;">
+            <div class="panel-head">
+              <div class="panel-title">Events Queue</div>
             </div>
-          </div>
-
-          <!-- Reports Tab -->
-          <div id="tab-reports" class="tab-content" style="height: 100%;">
-            <div class="panel page-fill" style="display: flex; flex-direction: column; height: 100%;">
-              <div class="panel-head">
-                <div class="panel-title">Analyst Reports</div>
-                <div id="reportCount" style="font-size:11px;color:var(--muted)">0 reports</div>
-              </div>
-              <div class="row" style="margin-bottom: 10px;">
-                <button id="exportReportsBtn" class="btn">Export All Reports</button>
-              </div>
-              <div id="reportList" class="scroll-col" style="flex: 1;"></div>
-            </div>
-          </div>
-
-          <!-- Memory Graph Tab -->
-          <div id="tab-memory" class="tab-content" style="height: 100%;">
-            <div class="panel page-fill" style="display: flex; flex-direction: column; height: 100%;">
-              <div class="panel-head">
-                <div class="panel-title">Incident Memory Graph Correlation</div>
-              </div>
-              <div id="graphCanvas" class="graph" style="flex: 1; min-height: 320px;"></div>
-            </div>
-          </div>
-
-          <!-- Telemetry Tab -->
-          <div id="tab-telemetry" class="tab-content" style="height: 100%;">
-            <div class="panel page-fill" style="display: flex; flex-direction: column; gap: 16px; height: 100%;">
-              <div class="panel-head">
-                <div class="panel-title">System Metrics & Token Telemetry</div>
-              </div>
-              <div style="flex: 1; display: flex; flex-direction: column; gap: 16px;">
-                <div class="spark" style="flex: 1; min-height: 150px;">
-                  <canvas id="latencySpark"></canvas>
-                </div>
-                <div class="spark" style="flex: 1; min-height: 150px;">
-                  <canvas id="costSpark"></canvas>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- Processing Logs Tab -->
-          <div id="tab-processing" class="tab-content" style="height: 100%;">
-            <div class="panel page-fill" style="display: flex; flex-direction: column; height: 100%;">
-              <div class="panel-head">
-                <div class="panel-title">Real-Time Core Stream</div>
-              </div>
-              <pre id="streamLog" class="stream" style="flex: 1; margin: 0; min-height: 300px;"></pre>
+            <div id="eventProgressNote" class="event-desc" style="margin-bottom:8px"></div>
+            <div id="eventList" class="scroll-col" style="flex:1;"></div>
+            <div class="row" style="margin-top:10px;">
+              <button id="runNextBtn" class="btn">Run Next</button>
+              <button id="runAllBtn" class="btn">Run All</button>
             </div>
           </div>
         </div>
+
+        <!-- Reports Tab -->
+        <div id="tab-reports" class="tab-content" style="height:100%;">
+          <div class="panel page-fill" style="display:flex;flex-direction:column;height:100%;">
+            <div class="panel-head">
+              <div class="panel-title">Analyst Reports</div>
+              <div id="reportCount" style="font-size:11px;color:var(--muted)">0 reports</div>
+            </div>
+            <div class="row" style="margin-bottom:10px;">
+              <button id="exportReportsBtn" class="btn">Export All Reports</button>
+            </div>
+            <div id="reportList" class="scroll-col" style="flex:1;"></div>
+          </div>
+        </div>
+
+        <!-- Timeline Tab -->
+        <div id="tab-timeline" class="tab-content" style="height:100%;">
+          <div class="panel page-fill" style="display:flex;flex-direction:column;gap:12px;height:100%;">
+            <div class="panel-head">
+              <div class="panel-title">Detection Timeline</div>
+              <div id="timelineCount" style="font-size:11px;color:var(--muted)">0 entries</div>
+            </div>
+            <div id="zoneSummary" class="timeline-zone-row"></div>
+            <div id="timelineList" class="scroll-col" style="flex:1;"></div>
+          </div>
+        </div>
+
+        <!-- Memory Graph Tab -->
+        <div id="tab-memory" class="tab-content" style="height:100%;">
+          <div class="panel page-fill" style="display:flex;flex-direction:column;height:100%;">
+            <div class="panel-head">
+              <div class="panel-title">Incident Memory Graph Correlation</div>
+            </div>
+            <div id="graphCanvas" class="graph" style="flex:1;min-height:320px;"></div>
+          </div>
+        </div>
+
+        <!-- Telemetry Tab -->
+        <div id="tab-telemetry" class="tab-content" style="height:100%;">
+          <div class="panel page-fill" style="display:flex;flex-direction:column;gap:16px;height:100%;">
+            <div class="panel-head">
+              <div class="panel-title">System Metrics &amp; Token Telemetry</div>
+            </div>
+            <div style="flex:1;display:flex;flex-direction:column;gap:16px;">
+              <div class="spark" style="flex:1;min-height:150px;"><canvas id="latencySpark"></canvas></div>
+              <div class="spark" style="flex:1;min-height:150px;"><canvas id="costSpark"></canvas></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Processing Logs Tab -->
+        <div id="tab-processing" class="tab-content" style="height:100%;">
+          <div class="panel page-fill" style="display:flex;flex-direction:column;height:100%;">
+            <div class="panel-head">
+              <div class="panel-title">Real-Time Core Stream</div>
+            </div>
+            <pre id="streamLog" class="stream" style="flex:1;margin:0;min-height:300px;"></pre>
+          </div>
+        </div>
       </div>
+
     </main>
   </div>
 
@@ -346,12 +458,80 @@
     const ctx = canvas.getContext('2d');
     const visionLog = document.getElementById('visionLog');
     const feedTs = document.getElementById('feedTimestamp');
+    const monitoringToggleBtn = document.getElementById('monitoringToggleBtn');
+    const monitoringStateChip = document.getElementById('monitoringStateChip');
 
     let currentBoxes = [];
     let boxTimestamp = 0;
     let totalDetections = 0;
     let totalThreats = 0;
     let lastDetectionTime = 0;
+    let monitoringEnabled = true;
+
+    function updateOverlayHud(statusText, trackCount) {
+      const status = document.getElementById('overlayStatus');
+      const tracks = document.getElementById('overlayTrackCount');
+      if (status && statusText) status.textContent = statusText;
+      if (tracks && typeof trackCount === 'number') tracks.textContent = `${trackCount} tracks`;
+    }
+
+    function applyMonitoringState(enabled, reason) {
+      monitoringEnabled = Boolean(enabled);
+      const root = document.getElementById('tab-video');
+      if (root) {
+        root.classList.toggle('monitoring-off', !monitoringEnabled);
+      }
+      if (monitoringToggleBtn) {
+        monitoringToggleBtn.textContent = monitoringEnabled ? 'Pause Monitoring' : 'Resume Monitoring';
+      }
+      if (monitoringStateChip) {
+        monitoringStateChip.textContent = monitoringEnabled ? 'Monitoring ON' : 'Monitoring OFF';
+        monitoringStateChip.classList.toggle('is-off', !monitoringEnabled);
+      }
+      if (!monitoringEnabled) {
+        updateOverlayHud('Monitoring paused', currentBoxes.length);
+        if (video && !video.paused) {
+          video.pause();
+        }
+      } else if (video && video.paused) {
+        video.play().catch(() => {});
+      }
+      if (reason) {
+        const ts = new Date().toLocaleTimeString();
+        visionLog.textContent = `[${ts}] ${reason}\n\n` + visionLog.textContent;
+        visionLog.textContent = visionLog.textContent.split('\n').slice(0, 120).join('\n');
+      }
+    }
+
+    async function loadMonitoringState() {
+      try {
+        const res = await fetch('/api/monitoring');
+        if (!res.ok) return;
+        const data = await res.json();
+        applyMonitoringState(Boolean(data.enabled), data.enabled ? 'Monitoring enabled' : 'Monitoring paused');
+      } catch (e) {
+        console.warn('monitoring state fetch failed', e);
+      }
+    }
+
+    async function toggleMonitoring() {
+      try {
+        const res = await fetch('/api/monitoring/toggle', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ enabled: !monitoringEnabled })
+        });
+        if (!res.ok) return;
+        const data = await res.json();
+        applyMonitoringState(Boolean(data.enabled), data.enabled ? 'Monitoring resumed by operator' : 'Monitoring paused by operator');
+      } catch (e) {
+        console.warn('monitoring toggle failed', e);
+      }
+    }
+
+    if (monitoringToggleBtn) {
+      monitoringToggleBtn.addEventListener('click', toggleMonitoring);
+    }
 
     // Accurate canvas sizing via ResizeObserver — handles flex/grid layout reflows
     function syncCanvasSize() {
@@ -396,6 +576,8 @@
         if (alpha > 0) {
           ctx.save();
           ctx.globalAlpha = alpha;
+          ctx.shadowColor = 'rgba(255, 255, 255, 0.35)';
+          ctx.shadowBlur = 8;
 
           currentBoxes.forEach(box => {
             // Clamp coordinates to valid range
@@ -445,6 +627,9 @@
 
           ctx.restore();
         }
+        updateOverlayHud(`LIVE DETECTIONS ${Math.round(alpha * 100)}%`, currentBoxes.length);
+      } else {
+        updateOverlayHud('Overlay idle', 0);
       }
 
       requestAnimationFrame(drawBoundingBoxes);
@@ -465,12 +650,16 @@
         try {
           const msg = JSON.parse(ev.data);
           const payload = msg.payload || {};
-          const boxes = payload.boxes || [];
+          const boxes = payload.boxes || payload.detection?.raw_boxes || [];
+          const summary = payload.summary || payload.detection?.summary || '';
+          const alerts = Array.isArray(payload.alerts) ? payload.alerts : [];
+          const zone = payload.zone || payload.detection?.zone || 'unknown zone';
 
           if (boxes.length > 0) {
             currentBoxes = boxes;
             boxTimestamp = Date.now();
             totalDetections++;
+            updateOverlayHud(summary ? summary.slice(0, 42) : 'Detection received', boxes.length);
 
             document.getElementById('detTotal').textContent = totalDetections;
             document.getElementById('detBoxes').textContent = boxes.length;
@@ -485,7 +674,8 @@
             // Vision log
             const labels = boxes.map(b => `  ${b.label} (${Math.round((b.confidence||0)*100)}%) @ [${(b.x||0).toFixed(2)}, ${(b.y||0).toFixed(2)}]`).join('\n');
             const ts = new Date().toLocaleTimeString();
-            visionLog.textContent = `[${ts}] Detection #${totalDetections} — ${boxes.length} object(s)\n${labels}\n\n` + visionLog.textContent;
+            const alertText = alerts.length ? `\nAlerts:\n${alerts.map(a => `  • ${a.message || a.rule_id || 'alert'}`).join('\n')}` : '';
+            visionLog.textContent = `[${ts}] Detection #${totalDetections} — ${boxes.length} object(s) @ ${zone}\n${summary ? `Summary: ${summary}\n` : ''}${labels}${alertText}\n\n` + visionLog.textContent;
             visionLog.textContent = visionLog.textContent.split('\n').slice(0, 120).join('\n');
           }
         } catch(e) { console.warn('detection parse error', e); }
@@ -496,11 +686,41 @@
           const msg = JSON.parse(ev.data);
           const event = msg.payload?.event;
           if (event && event.source === 'camera_harness') {
-            totalThreats++;
-            document.getElementById('detThreats').textContent = totalThreats;
-
             const ts = new Date().toLocaleTimeString();
-            visionLog.textContent = `[${ts}] ⚠ THREAT ALERT: ${event.id} — ${event.description}\n\n` + visionLog.textContent;
+            const analysisState = String(event.analysis_state || '').toLowerCase();
+            const retryAfter = Number(event.quota_retry_seconds || 0);
+
+            if (analysisState && analysisState !== 'active') {
+              updateOverlayHud(
+                retryAfter > 0
+                  ? `Quota cooling down ${Math.ceil(retryAfter)}s`
+                  : 'Quota cooling down',
+                currentBoxes.length
+              );
+              visionLog.textContent = `[${ts}] ⚠ Vision ${analysisState.toUpperCase()}: ${event.description || 'Gemini temporarily unavailable'}\n\n` + visionLog.textContent;
+              return;
+            }
+
+            const severity = String(event.severity || '').toLowerCase();
+            const isThreatEvent = severity === 'high' || severity === 'critical' || /threat/i.test(event.event_type || '') || /threat/i.test(event.description || '');
+            const detail = event.description || 'Vision update received';
+            if (isThreatEvent) {
+              totalThreats++;
+              document.getElementById('detThreats').textContent = totalThreats;
+            }
+
+            updateOverlayHud(isThreatEvent ? 'Live threat detected' : 'Vision active', currentBoxes.length);
+            visionLog.textContent = `[${ts}] ${isThreatEvent ? '⚠ THREAT ALERT' : 'ℹ Vision update'}: ${event.id} — ${detail}\n\n` + visionLog.textContent;
+          }
+        } catch(e) {}
+      });
+
+      state.sse.addEventListener('monitoring_state', (ev) => {
+        try {
+          const msg = JSON.parse(ev.data);
+          const payload = msg.payload || {};
+          if (typeof payload.enabled === 'boolean') {
+            applyMonitoringState(payload.enabled, payload.enabled ? 'Monitoring enabled' : 'Monitoring paused');
           }
         } catch(e) {}
       });
@@ -516,10 +736,99 @@
           boxTimestamp = Date.now() - 1000; // treat as 1s old
           document.getElementById('detTotal').textContent = 1;
           document.getElementById('detBoxes').textContent = data.boxes.length;
+          updateOverlayHud('Restored cached detection', data.boxes.length);
           const labels = data.boxes.map(b => `  ${b.label} (${Math.round((b.confidence||0)*100)}%)`).join('\n');
-          visionLog.textContent = `[startup] Last known detection:\n${labels}\n\n` + visionLog.textContent;
+          const alerts = Array.isArray(data.alerts) ? data.alerts : [];
+          const summary = data.summary || '';
+          visionLog.textContent = `[startup] Last known detection${summary ? ` — ${summary}` : ''}\n${labels}${alerts.length ? `\nAlerts:\n${alerts.map(a => `  • ${a.message || a.rule_id || 'alert'}`).join('\n')}` : ''}\n\n` + visionLog.textContent;
         }
       } catch(e) { /* no-op */ }
+    }
+
+    const monitoringState = {
+      timeline: [],
+      zones: {},
+      tracks: [],
+      es: null
+    };
+
+    function safeText(value) {
+      return String(value ?? '').replace(/[<>&]/g, (s) => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;' }[s]));
+    }
+
+    function renderZoneSummary() {
+      const root = document.getElementById('zoneSummary');
+      if (!root) return;
+      const zones = Object.values(monitoringState.zones || {});
+      if (!zones.length) {
+        root.innerHTML = '<div class="event-desc">No zone status has been received yet.</div>';
+        return;
+      }
+
+      root.innerHTML = zones.map((zone) => `
+        <div class="zone-card" data-risk="${safeText(zone.threat_level || 'low')}">
+          <div class="zone-title">${safeText(zone.zone || 'Unknown Zone')}</div>
+          <div class="zone-meta">${safeText(zone.camera_id || 'camera')} · ${safeText(zone.summary || 'No summary yet')}</div>
+          <div class="zone-meta">${safeText(zone.active_tracks || 0)} tracks · ${safeText(zone.person_count || 0)} people · ${safeText(zone.vehicle_count || 0)} vehicles · ${safeText(zone.suspicious_count || 0)} suspicious</div>
+          <div class="zone-meta">Risk: ${safeText(zone.threat_level || 'low')} · Updated ${safeText(zone.updated_at || '')}</div>
+        </div>
+      `).join('');
+    }
+
+    function renderTimelinePanel() {
+      const root = document.getElementById('timelineList');
+      const count = document.getElementById('timelineCount');
+      if (!root) return;
+      if (count) count.textContent = `${monitoringState.timeline.length} entries`;
+      renderZoneSummary();
+
+      if (!monitoringState.timeline.length) {
+        root.innerHTML = '<div class="event-desc">No detection timeline yet.</div>';
+        return;
+      }
+
+      root.innerHTML = monitoringState.timeline.map((entry) => `
+        <article class="timeline-item timeline-${safeText(entry.kind || 'detection')}">
+          <div class="timeline-top">
+            <span class="timeline-kind">${safeText(entry.kind || 'detection')}</span>
+            <span>${safeText(new Date(entry.timestamp || Date.now()).toLocaleString())}</span>
+          </div>
+          <div class="timeline-title">${safeText(entry.title || '')}</div>
+          <div class="timeline-meta">${safeText(entry.zone || 'unknown zone')} · ${safeText(entry.camera_id || 'unknown camera')} · ${safeText(entry.severity || 'low')}</div>
+          <div class="timeline-detail">${safeText(entry.detail || '')}</div>
+        </article>
+      `).join('');
+    }
+
+    async function syncMonitoringSnapshot() {
+      try {
+        const [timelineRes, zonesRes, tracksRes] = await Promise.all([
+          fetch('/api/timeline'),
+          fetch('/api/zones'),
+          fetch('/api/tracks')
+        ]);
+        monitoringState.timeline = await timelineRes.json();
+        monitoringState.zones = await zonesRes.json();
+        monitoringState.tracks = await tracksRes.json();
+        renderTimelinePanel();
+      } catch (e) {
+        console.warn('monitoring snapshot failed', e);
+      }
+    }
+
+    function attachMonitoringStream() {
+      if (monitoringState.es) {
+        monitoringState.es.close();
+      }
+
+      const es = new EventSource('/api/stream');
+      monitoringState.es = es;
+      ['timeline', 'tracking', 'zone_status', 'report', 'detection'].forEach((type) => {
+        es.addEventListener(type, () => {
+          syncMonitoringSnapshot();
+        });
+      });
+      es.onerror = () => console.warn('monitoring stream reconnecting...');
     }
 
     // Initialize core application — then attach SSE listeners
@@ -528,13 +837,19 @@
     if (initResult && typeof initResult.then === 'function') {
       initResult.then(() => {
         attachDetectionListeners();
+        loadMonitoringState();
         loadInitialDetections();
+        syncMonitoringSnapshot();
+        attachMonitoringStream();
       });
     } else {
       // init() is sync or returns void — give SSE a moment to connect
       setTimeout(() => {
         attachDetectionListeners();
+        loadMonitoringState();
         loadInitialDetections();
+        syncMonitoringSnapshot();
+        attachMonitoringStream();
       }, 300);
     }
   </script>
