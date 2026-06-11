@@ -195,9 +195,30 @@ The goal is to reduce operational fatigue, improve situational awareness, and en
 ---
 
 ## License
+```
+Ark AI Proprietary License v1.0
 
-This repository is provided for demonstration and evaluation purposes.
+Copyright (c) 2026 Ark AI.
+All rights reserved.
 
-For collaboration, research, or partnership inquiries:
+This software and associated documentation files are the proprietary intellectual property of Ark AI.
 
-[team@arkaitech.xyz](mailto:team@arkaitech.xyz)
+Permission is granted to access, view, and evaluate the source code for personal, educational, and non-commercial purposes only.
+
+Without explicit prior written permission from Ark AI, you may not:
+
+• Copy or redistribute the software.
+• Modify or create derivative works.
+• Use the software for commercial purposes.
+• Incorporate any portion of the software into another project or product.
+• Reverse engineer or attempt to reproduce proprietary components for commercial exploitation.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND.
+
+For commercial licensing, partnerships, or research collaborations:
+
+team@arkaitech.xyz
+
+Copyright © 2026 Ark AI.
+All rights reserved.
+```
